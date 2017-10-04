@@ -1,0 +1,69 @@
+<div class="mod mod-edit" data-message-url="messages/" data-locales-url="/locales">
+	<script id="tpl_results" class="tpl-message" type="text/x-dot-template">
+		<div class="container">
+			<div class="row clearfix">
+				<form id="msgEditForm" name="msgEditForm" role="form" method="post" action="#" class="form-horizontal">
+					<legend>Edit Message</legend>
+					<div id="alert-area"></div>
+					<div class="form-group">
+						<label for="codeId" class="col-md-2 control-label">Message code</label>
+						{{? it.message.codeId}}
+						<!--edit message-->
+						<p class="col-sm-10 form-control-static">{{=it.message.codeId}}</p>
+						<input id="codeId" name="codeId" type="hidden" value="{{=it.message.codeId}}"/>
+						{{??}}
+						<!--new message-->
+						<div class="col-md-8">
+							<input id="codeId" name="codeId" class="input-md form-control" type="text"/>
+						</div>
+						{{?}}
+					</div>
+					<div class="form-group">
+						<label for="type" class="col-md-2 control-label">Type</label>
+						{{? it.message.codeId}}
+						<!--edit message-->
+						<p class="col-sm-10 form-control-static">{{=it.message.type?it.message.type:'DEFAULT'}}</p>
+						<input name="{{=it.message.type?'type':'defaultType'}}" id="type" type="hidden" value="{{=it.message.type}}"/>
+						{{??}}
+						<!--new message-->
+						<div class="col-md-8">
+							<input id="type" name="type" class="input-md form-control" type="text"/>
+						</div>
+						{{?}}
+					</div>
+					<div id="languageContainer">
+						{{~it.locales :lang}}
+						<div class="form-group">
+							<label for="langId{{=lang}}" class="col-md-2 control-label">Language</label>
+
+							<div class="col-md-2">
+								<input id="langId{{=lang}}" name="langId" type="text" class="input-md form-control" value="{{=lang}}"/>
+							</div>
+
+							<label for="message{{=lang}}" class="col-md-2 control-label">Message</label>
+
+							<div class="col-md-4">
+								<input id="message{{=lang}}" name="message" class="input-md form-control"
+									   value="{{=it.message.codeId && it.message.nameMappings[lang]?it.message.nameMappings[lang]:''}}"/>
+							</div>
+						</div>
+						{{~}}
+					</div>
+					<div class="form-actions">
+						<div class="col-sm-offset-2">
+							<a id="addNewLanguage" class="btn btn-default"><i class="glyphicon glyphicon-plus"></i> Add language</a>
+						</div>
+						<br/>
+
+						<div class="col-sm-offset-2">
+							<a id="saveMessage" type="submit" class="btn btn-primary"><i class="glyphicon glyphicon-floppy-disk"></i> Save</a>
+							<a href="./list.html" class="btn btn-default" style="margin-left: 10px;"><i class="glyphicon glyphicon-ban-circle"></i>
+								Cancel</a>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</script>
+	<div class="message"></div>
+</div>

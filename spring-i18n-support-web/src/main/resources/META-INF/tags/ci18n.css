@@ -1,0 +1,71 @@
+/* TODO cleanup, grouping, naming hints, trim! */
+@charset "UTF-8";
+/*
+	naming hints
+	---
+	ct: container
+	exp: export
+	msg: message
+*/
+/* GENERAL */
+/* buttons */
+.msg_btn_submit		{  }
+.msg_btn_cancel		{  }
+.msg_btn_newlang	{  }
+
+
+/* LIST SECTION */
+/* list title */
+.msg_tbl_h	{  }
+
+/* tablesorter */
+.msg_tbl						{ border-collapse:collapse; border-spacing:0; text-align:left; background-color:#fff; }
+.msg_tbl th						{ border:1px solid #ccc; border-right:1px solid #666; border-bottom:1px solid #666; padding:4px 16px 4px 4px; vertical-align:middle; }
+.msg_tbl thead .header			{ background:url(image/tbl_sort_bg.png) no-repeat center right; cursor:pointer; }
+.msg_tbl thead .headerSortUp	{ background-image:url(image/tbl_sort_asc.png); }
+.msg_tbl thead .headerSortDown	{ background-image:url(image/tbl_sort_desc.png); }
+.msg_tbl thead .headerSortDown,
+.msg_tbl thead .headerSortUp	{ background-color:#ddd; }
+.msg_tbl td						{ padding:4px; vertical-align:top; }
+.msg_tbl td img					{ vertical-align:top; }
+.msg_tbl .msg_odd td			{ background-color:#ddd; }
+/* columns */
+.msg_col_0		{ width:200px; overflow:hidden; }
+.msg_col_1		{ /*configure each additional column width:200px; overflow:hidden;*/ }
+
+/* action link icons */
+.msg_tbl a		{ display:block; float:left; margin-left:14px; width:18px; height:18px; }
+a.msg_ico_edit	{ background:url(image/ico_edit.png) no-repeat; }
+a.msg_ico_nfo	{ background:url(image/ico_nfo.png) no-repeat; }
+a.msg_ico_del	{ background:url(image/ico_del.png) no-repeat; }
+
+
+/* EXPORT SECTION */
+/* container */
+.msg_exp_ct		{  }
+/* list item (link) */
+.msg_exp_item	{ display:block; }
+
+
+/* EDIT / DELETE SECTION */
+/* container */
+.msg_ct			{ width:100%; }
+.msg_ct_code,
+.msg_ct_type	{ padding:10px; }
+.msg_ct_lang,
+.msg_ct_msgs	{ padding:5px; }
+.msg_ct_btn,
+.msg_ct_new		{ padding:10px; }
+
+/* labels (_l_) and inputs (_i_) */
+.msg_i_code		{ margin-left:15px; width:50%; }
+.msg_l_code		{ display:inline; }
+.msg_i_type		{ margin-left:15px; width:50%; }
+.msg_l_type		{ display:inline;}
+.msg_i_lang		{ margin-left:15px; margin-right:20px; width:10%; }
+.msg_l_lang		{ display:inline; }
+.msg_i_msg		{ margin-left:15px; width:50%; }
+.msg_l_msg		{ display:inline; }
+
+/* error */
+.msg_err 		{ background-color:#ffeeee; }

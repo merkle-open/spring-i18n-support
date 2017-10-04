@@ -1,0 +1,31 @@
+<ehcache>
+    <diskStore path="java.io.tmpdir"/>
+    <defaultCache
+        maxElementsInMemory="100"
+        eternal="false"
+        overflowToDisk="true"
+        timeToIdleSeconds="10"
+        timeToLiveSeconds="10"
+        diskPersistent="false"
+        diskExpiryThreadIntervalSeconds="120"
+        maxEntriesLocalHeap="5000"
+        />
+	<cache name="com.namics.oss.spring.support.i18n.FORMAT"
+           maxElementsInMemory="100"
+           eternal="false"
+           overflowToDisk="true"
+           timeToIdleSeconds="10"
+           timeToLiveSeconds="10"
+           diskPersistent="false"
+           diskExpiryThreadIntervalSeconds="120"
+           maxEntriesLocalHeap="5000"/>
+	<cache name="com.namics.oss.spring.support.i18n.MESSAGE"
+           maxElementsInMemory="100"
+           eternal="false"
+           overflowToDisk="true"
+           timeToIdleSeconds="10"
+           timeToLiveSeconds="10"
+           diskPersistent="false"
+           diskExpiryThreadIntervalSeconds="120"
+           maxEntriesLocalHeap="5000"/>
+</ehcache>

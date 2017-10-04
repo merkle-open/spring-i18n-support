@@ -1,0 +1,14 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>i18n-demo: Welcome</title></head>
+<body>
+<h1>List-View</h1>
+<th-block data-th-fragment="statusMessage(error, success)">
+	<div data-th-class="${errorCss}" data-th-if="${error != null && error!=''}" data-th-text="#{error}">
+	</div>
+	<div data-th-class="${successCss}" data-th-if="${success != null && success!=''}" data-th-text="#{success}">
+	</div>
+</th-block>
+</body>
+</html>
+
+

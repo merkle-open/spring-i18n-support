@@ -1,0 +1,60 @@
+<div class="mod mod-list" data-messages-url="messages" data-locales-url="/locales">
+	<script id="tpl_results" class="tpl-messages" type="text/x-dot-template">
+		<br/>
+		<a href="./edit.html" class="btn btn-primary"><i class="glyphicon glyphicon-plus"></i> Create new label</a>
+		<br/>
+		{{~it.messages :t}}
+		<h3>labels for type {{=t.name}}</h3>
+		<div class="table-responsive">
+			<table class="table tablesorter table-hover table-condensed table-striped">
+				<thead>
+				<tr>
+					<th>Code</th>
+					{{~it.locales :lang}}
+					<th>{{=lang}}</th>
+					{{~}}
+					<th>Actions</th>
+				</tr>
+				</thead>
+				<tbody>
+				{{~t.messages :msg}}
+				<tr>
+					<td><strong>{{=msg.codeId}}</strong></td>
+					{{~it.locales :lang}}
+					<td>{{=msg.nameMappings[lang]?msg.nameMappings[lang]:''}}</td>
+					{{~}}
+					<td><a href="./edit.html?code={{=msg.codeId}}" class="edit btn btn-xs"><i class="glyphicon glyphicon-edit"></i> Edit</a>
+						<a href="#confirmationModal" data-codeid="{{=msg.codeId}}" data-type="{{=msg.type}}" class="edit btn btn-xs js-confirm"><i
+								class="glyphicon glyphicon-trash"></i> Delete</a>
+					</td>
+				</tr>
+				{{~}}
+				</tbody>
+			</table>
+		</div>
+		{{~}}
+		{{? it.messages.length<1}}
+		<h2>No messages so far!</h2>
+		{{?}}
+	</script>
+	<div class="messages"></div>
+	<div id="confirmationModal" class="modal bs-modal-detail" tabindex="-1" role="dialog" aria-labelledby="Confirm Deletion" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+					</button>
+					<h4 class="modal-title" id="myModalLabel">Confirm Deletion</h4>
+				</div>
+				<div class="modal-body">
+					<p>Do you really want to delete the message with id <strong><span class="js-codeId">???</span></strong> and type <span
+							class="js-type">???</span>?</p>
+				</div>
+				<div class="modal-footer">
+					<button class="btn" data-dismiss="modal" aria-hidden="true">No</button>
+					<button class="btn btn-primary js-delete">Yes</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

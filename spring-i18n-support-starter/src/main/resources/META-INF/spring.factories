@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.namics.oss.spring.support.i18n.autoconfigure.SpringI18nSupportStarterAutoConfiguration

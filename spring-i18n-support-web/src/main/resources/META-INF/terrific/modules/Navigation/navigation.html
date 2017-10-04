@@ -1,0 +1,11 @@
+<div class="mod mod-navigation" data-connectors="1"
+	 data-items='[{"name":"Edit Labels","url":"list.html"},{"name":"Import / Export Labels","url":"files.html"},{"name":"Reload","url":"reload.html"}]'>
+	<script class="tpl-navi" type="text/x-dot-template">
+		<ul class="items nav nav-tabs">
+			{{~it :value:index}}
+			<li class="{{=value.classes}}"><a href="{{=value.url}}">{{=value.name}}</a></li>
+			{{~}}
+		</ul>
+	</script>
+	<div class="items"></div>
+</div>

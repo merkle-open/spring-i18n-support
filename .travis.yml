@@ -1,0 +1,33 @@
+language: java
+env:
+  global:
+    - # ^^ OSSRH_USERNAME
+    - secure: "Qh6hlBWYLFUQKP9YG2UqMR35FUdZx06kjLbkVXP0I7w97I17M0b/Hdb5i8mx2b7qZExot6FZy5Mc9wNpwf5QDBZ96drbPRlQl7jGfJI9Y7P1DRfQ1dt5NHjTxYcP4T8TAoe3xD0pPdPsIHu+lB/ms7ZWQQKv91UQzbjf1o/YhwkzSc8AnIr44Iq86+0oZkYSJ9ek4cTiGcEW0vgLXrQXqGBEkU2FO8cnV/zS3NfWQ71KXMRKWYNpXjti6PierR/lAyUafJiDpCd+c9CPFTg1JbX2AK94q5incPrfryt0plLHrumVnqc4SWiavW/7A9nqoYG68AKjLy8qdEjzROz3y/6ClK+uTRMj8swoBe0h7GUQLviqApD3CJyHFeYUzFE1QEkNvyIbXa9yQZ64b91Og2ODNO2JJCCwcbzh0c+td1nM616lUXGbuTT+RFmI4vp2moUTc7okeMFhvi6WLe3gEOSX8RQdxG8tKj88VNj0tgrvRX6wdg/Jxd7tn4a/LWZ5RrZi53cw8BfhFQ9qRZJ/kzbtMCX4p6GDOLGxE/3okjrEkGBMLMop+oQveMan504XxD0uWul7VYXw57+XzZsRvd5thknkJAZV+mI6SM/a57NPOIwMdBr0FYUnEqCI8AYK2KS2LA311Ow7IDaMiaT2NXfsoE0tralzoF4QvTkWJU0="
+    - # ^^ OSSRH_PASSWORD
+    - secure: "q6E9REqNA/s73N+UcyCK4eCC66LM9GeWUEw/oJR81zmmYhSKW1FtR3ig1gQcjYQsunqwZ3K9o0q2fFWvEp4bjZDYR0awIrKjJDfpJhtOpEE/a+XA0wXCetSzXrB4CKBBJ/Gu301ZH2pyjQjlHJWAlVReL/uuS2mY94gKghPGv7nFI0xovmX7yKeoNXTZEZU4NkisvPDxl8Y4arbDMhXoNuP6Fa4jRxeifLeDsroweVkMhxsZxIGoSAhhwK6REmsKhHTG1Hu8bx78kbyy7u67ssyNHw4f/5hA7E/1Q6kSNdFZR0PMU5TbSVhpgPMdrCFaQ5ZSSjiFAz/TJvz/5ntkbsnkON99s33P+PE2l35WZdXwKpSitRZJufHQ4O7/bDhcYote3xq3wsKZ8SWxaG4n8mSMemWUf6zWAyEYN8cvj3aJ43BsD5bB5vf7Dl6H4LJCl/N6pEY/lmJkne7kr6rL8KrkYE8eNRjxbB/6seoWf8/AAhYT5r40Qbz08Mv14lTEb98Rj1dke0/W4ZCF85pITjGSvYyq802dcd8cmJVsP7TUQSFsv7NoWeTEK7dTTvbZcPJJhKTJu+yAO4tEycb/UZBaRGIgz/3S2PzMF6j6aSmK84dq3gQA++WKsQI1nW/EHq7qCy1fMxtcltAMfxiQ69dHFnozhpM58ERHCxltWiU="
+    - # ^^ GPG_KEY_NAME
+    - secure: "aTgqjDFBGPRD7IjCDl/CwFhgzI3LSGtCnNNOY3yrFKQJT2bfde0bRGyY9KxsxPByaeeB3NmNFdRs4V+1tVviEXeRfGovZuNEg0PyZSpS8JjNEn+pYx3ANJldILJtsFRGr1Q8wvd+1egKScFmyPqJzQftIEFwrN8WpRTdnuMm2x7kgT8GzP6n1XVOjdZoGcA6Y7MENhR3z9Agx7TipfPYldJguTUna5pGcjv9Cc7q5OQuV6xKTEKcAScsjUw41QS7gpm/U2eLdx2YTmHQ7H7CpK8z/HvNQsme89WUb0tw0biiQ9YHw9ZhsmvroImfb1mLD71n0itOa5rCc8nT4SqgaudkOMSW/roK3QnIQRlhDtsjUVHw3xoN6ISH6GmHDFV7cr9gUvyMCux2vKEt0dtrnPB/Nex0BtOTMyWCEYzMJ1Z65XOav9fMYqd8uKHerTbMvde74hwKJZgD32mzjc+WUqUTS418T6XsDZpjM9v62kRvkG0O+ZIKULfMFVosZSrnK/codEkHmicrojAPv2s8ndXsVdge6hfBrquenJ2LAHwIMXyUrwUiPzSZ/7hxitgQpg7c9tPwLOjtzVrHNa2R3GC97VftfwKvk3RAXBFRqBqUC4fc9iw7cha5/pYVtir8rb5r0O+AEE9OdLImGqP7m6Slq821WhTp1lT/8DrcyuI="
+    - # ^^ GPG_PASSPHRASE
+    - secure: "pbwArT480h7K+fu4bLTwsaI2KezY3JhqkKncX8Ep/2vDCmAeC3bCYAPrlZHYybU4Nf7SWaWajta+0bHnuzsVOJ482zF43GZyrrJZ2smI4ZaKUAxA1jyUqK+SVJQvOwZcbrVt3eaf1NGy6QJ24ubnI1oC3Dn42c5+0F6gC/7iPxYdOLuci2VichzHReZCf++oaApUTXVLCavjcQglAeqAgf0U/3s2Ts5n3BqUT+NLaPUYx9bQxK5f6jcQJQKJmv7jFSqsm1VvBUpFa0ycrKflIUpUAxj6rTi+Mo5xFIMuCz7UaGZmcT8f+R6Dj5QnZ5c4d4k6Nym+Vf6FJQ7AM3eOADmBA7KHM3X1I1kbW0bqaeGJZOyMQfetRB/QUQfn02Uf7HmGJR/RD1uOWcMZh3bNw19AT6IDhQsahXmHU+eEABf0LOtihcyvp8Oa0WH7jZ3ybrtjuPIN4p0WKxw+O2W6/kmx3L75tqsXy5utWYx/JVvdP1v7hGC2V7X3s/vVrICJz6n4qkfr+IWRIjMeIUHcaAebE1atGnt094G6mV394ikmGM7rdhIdQpbdnIUrZiQHzuWs9r3/NFvEDqc2vjErKEEZ36xB8hQl5DAtlsC/ndKf8zSBqNVd6chCepNlFM7SveO1bFiNUyIdDZ0V622K6XTAysBUUeBSEB/bDDXlldk="
+before_install:
+  - openssl aes-256-cbc -K $encrypted_e9ea8df1c500_key -iv $encrypted_e9ea8df1c500_iv -in codesigning.asc.enc -out codesigning.asc -d
+  - gpg --yes --batch --import codesigning.asc
+jdk:
+  - oraclejdk8
+install: mvn clean install -P !ossrh -DskipTests=true -Dmaven.javadoc.skip=true -B -V -U
+script:
+- mvn deploy -P ossrh --settings mvnsettings.xml
+cache:
+  directories:
+    - ~/.m2/repository
+branches:
+  only:
+    - master
+    - develop
+    - /^feature.*/
+    - /^hotfix.*/
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+

@@ -32,7 +32,7 @@ public class SpringI18nSupportWebAutoConfiguration {
 	protected SpringI18nSupportProperties springI18nSupportProperties;
 
 	@Bean
-	public ServletRegistrationBean configurationServlet() {
+	public ServletRegistrationBean i18nSupportServlet() {
 		AnnotationConfigWebApplicationContext applicationContext = new AnnotationConfigWebApplicationContext();
 		applicationContext.register(I18nWebConfig.class);
 

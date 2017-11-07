@@ -21,6 +21,18 @@ Add the dependency for the module itself (i.e. spring-i18n-support) and the corr
 		<artifactId>spring-i18n-support-starter</artifactId>
 		<version>1.0.0</version>
 	</dependency>
+	
+### Configuration of the data source
+The following properties could be used to customize the table and column names, which were used for the message entries.
+
+
+    # Optional properties for spring-i18n-support
+    com.namics.oss.spring.support.i18n.dataSource.tableName=MESSAGES
+    com.namics.oss.spring.support.i18n.dataSource.codeIdColumnName=CODEID
+    com.namics.oss.spring.support.i18n.dataSource.langIdColumnName=LANGID
+    com.namics.oss.spring.support.i18n.dataSource.messageColumnName=MESSAGE
+    com.namics.oss.spring.support.i18n.dataSource.typeColumnName=TYPE
+	
 
 ### Configuration of the web interface
 The starter allows you to override the default settings for servlet-name and servlet-mapping.

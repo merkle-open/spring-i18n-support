@@ -14,6 +14,8 @@ public class SpringI18nSupportProperties {
 
 	private Web web = new Web();
 
+	private DataSource dataSource = new DataSource();
+
 	public Web getWeb() {
 		return web;
 	}
@@ -26,6 +28,20 @@ public class SpringI18nSupportProperties {
 		setWeb(web);
 		return this;
 	}
+
+	public DataSource getDataSource() {
+		return dataSource;
+	}
+
+	public void setDataSource(DataSource dataSource) {
+		this.dataSource = dataSource;
+	}
+
+	public SpringI18nSupportProperties dataSource(DataSource dataSource) {
+		setDataSource(dataSource);
+		return this;
+	}
+
 
 	public static class Web {
 		public static final String NAMICS_SPRING_I18N_PROPERTIES_WEB = NAMICS_SPRING_I18N_PROPERTIES_PREFIX + ".web";
@@ -54,6 +70,76 @@ public class SpringI18nSupportProperties {
 
 		public void setServletMapping(String servletMapping) {
 			this.servletMapping = servletMapping;
+		}
+	}
+
+	public static class DataSource {
+		public static final String NAMICS_SPRING_I18N_PROPERTIES_DATA_SOURCE = NAMICS_SPRING_I18N_PROPERTIES_PREFIX + ".dataSource";
+
+		/**
+		 * the table name
+		 */
+		private String tableName = "MESSAGES";
+
+
+		/**
+		 * column name for code id.
+		 */
+		private String codeIdColumnName = "CODEID";
+
+		/**
+		 * column name for the language id
+		 */
+		private String langIdColumnName = "LANGID";
+
+		/**
+		 * column name for the message
+		 */
+		private String messageColumnName = "MESSAGE";
+
+		/**
+		 * column name for message type.
+		 */
+		private String typeColumnName = "TYPE";
+
+		public String getTableName() {
+			return tableName;
+		}
+
+		public void setTableName(String tableName) {
+			this.tableName = tableName;
+		}
+
+		public String getCodeIdColumnName() {
+			return codeIdColumnName;
+		}
+
+		public void setCodeIdColumnName(String codeIdColumnName) {
+			this.codeIdColumnName = codeIdColumnName;
+		}
+
+		public String getLangIdColumnName() {
+			return langIdColumnName;
+		}
+
+		public void setLangIdColumnName(String langIdColumnName) {
+			this.langIdColumnName = langIdColumnName;
+		}
+
+		public String getMessageColumnName() {
+			return messageColumnName;
+		}
+
+		public void setMessageColumnName(String messageColumnName) {
+			this.messageColumnName = messageColumnName;
+		}
+
+		public String getTypeColumnName() {
+			return typeColumnName;
+		}
+
+		public void setTypeColumnName(String typeColumnName) {
+			this.typeColumnName = typeColumnName;
 		}
 	}
 

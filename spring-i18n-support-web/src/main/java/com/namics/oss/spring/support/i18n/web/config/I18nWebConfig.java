@@ -24,8 +24,7 @@ import org.springframework.web.servlet.config.annotation.*;
  */
 @Configuration
 @EnableAsync
-@EnableWebMvc
-public class I18nWebConfig extends WebMvcConfigurerAdapter {
+public class I18nWebConfig extends WebMvcConfigurationSupport {
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {

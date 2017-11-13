@@ -10,11 +10,13 @@ import com.namics.oss.spring.support.i18n.web.controller.FileController;
 import com.namics.oss.spring.support.i18n.web.controller.MessageSourceDataController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
-import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
 /**
  * I18nWebConfig.
@@ -24,8 +26,7 @@ import org.springframework.web.servlet.config.annotation.*;
  */
 @Configuration
 @EnableAsync
-@EnableWebMvc
-public class I18nWebConfig extends WebMvcConfigurerAdapter {
+public class I18nWebConfig extends WebMvcConfigurationSupport {
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
@@ -45,14 +46,6 @@ public class I18nWebConfig extends WebMvcConfigurerAdapter {
 	@Override
 	public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
 		configurer.enable();
-	}
-
-
-	@Override
-	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-		configurer.defaultContentType(MediaType.APPLICATION_JSON_UTF8);
-		configurer.favorPathExtension(false);
-		super.configureContentNegotiation(configurer);
 	}
 
 	@Bean

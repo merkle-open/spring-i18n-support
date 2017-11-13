@@ -32,6 +32,17 @@ The following properties could be used to customize the table and column names, 
     com.namics.oss.spring.support.i18n.dataSource.langIdColumnName=LANGID
     com.namics.oss.spring.support.i18n.dataSource.messageColumnName=MESSAGE
     com.namics.oss.spring.support.i18n.dataSource.typeColumnName=TYPE
+    
+You have to create the table yourself. With the following SQL Script, you create the default table used for labels:
+
+	-- create table schema
+	CREATE TABLE messages (
+	  codeid    VARCHAR(255),
+	  langid    VARCHAR(255),
+	  message LONGTEXT,
+	  type    VARCHAR(255),
+	  PRIMARY KEY (codeid, langid)
+	);
 	
 
 ### Configuration of the web interface

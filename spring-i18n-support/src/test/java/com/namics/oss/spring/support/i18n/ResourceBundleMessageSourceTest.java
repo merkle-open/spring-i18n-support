@@ -4,6 +4,7 @@
 
 package com.namics.oss.spring.support.i18n;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -23,71 +24,78 @@ import java.util.Locale;
  * @since Namics commons i18n 1.0 - Oct 14, 2010
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath:**resourceBundleMessageSourceContext.xml"})
+@ContextConfiguration(locations = { "classpath:**resourceBundleMessageSourceContext.xml" })
 public class ResourceBundleMessageSourceTest {
 
-    @Autowired
-    private MessageSource messageSource;
+	@Autowired
+	private MessageSource messageSource;
+	private static Locale savedLocale;
 
-    @BeforeClass
-    public static void testLocaleConfiguration() {
-        Assert.assertEquals("JVM system locale has to be 'de_CH' (german and Switzerland) in order to work properly.", "de_CH", System.getProperty("user.language") + "_" + System.getProperty("user.country"));
-    }
+	@BeforeClass
+	public static void setLocalToGerman() {
+		savedLocale = Locale.getDefault();
+		Locale.setDefault(new Locale("de", "CH"));
+	}
 
-    @Test
-    public void testExistingDeDe() {
-        Assert.assertEquals("DEUTSCH", this.messageSource.getMessage("test.full", null, new Locale("de")));
-    }
+	@AfterClass
+	public static void setJVMDefaultLocaleAgain() {
+		Locale.setDefault(savedLocale);
+	}
 
-    @Test
-    public void testExistingDeFr() {
-        Assert.assertEquals(this.messageSource.getMessage("test.full", null, LocaleContextHolder.getLocale()), this.messageSource
-                .getMessage("test.full", null, new Locale("fr")));
-    }
+	@Test
+	public void testExistingDeDe() {
+		Assert.assertEquals("DEUTSCH", this.messageSource.getMessage("test.full", null, new Locale("de")));
+	}
 
-    @Test
-    public void testNonExistingDe() {
-        Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.default", null, new Locale("de")));
-    }
+	@Test
+	public void testExistingDeFr() {
+		Assert.assertEquals(this.messageSource.getMessage("test.full", null, LocaleContextHolder.getLocale()), this.messageSource
+				.getMessage("test.full", null, new Locale("fr")));
+	}
 
-    @Test
-    public void testNonExistingFr() {
-        Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.default", null, new Locale("fr")));
-    }
+	@Test
+	public void testNonExistingDe() {
+		Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.default", null, new Locale("de")));
+	}
 
-    @Test
-    public void testExistingEnEn() {
-        Assert.assertEquals("ENGLISH", this.messageSource.getMessage("test.en", null, new Locale("en")));
-    }
+	@Test
+	public void testNonExistingFr() {
+		Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.default", null, new Locale("fr")));
+	}
 
-    @Test
-    public void testExistingEnDe() {
-        Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.en", null, new Locale("de")));
-    }
+	@Test
+	public void testExistingEnEn() {
+		Assert.assertEquals("ENGLISH", this.messageSource.getMessage("test.en", null, new Locale("en")));
+	}
 
-    @Test
-    public void testExistingDeEn() {
-        Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.de", null, new Locale("en")));
-    }
+	@Test
+	public void testExistingEnDe() {
+		Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.en", null, new Locale("de")));
+	}
 
-    @Test
-    public void testExistingDeIt() {
-        Assert.assertEquals(this.messageSource.getMessage("test.full", null, LocaleContextHolder.getLocale()), this.messageSource
-                .getMessage("test.de", null, new Locale("it")));
-    }
+	@Test
+	public void testExistingDeEn() {
+		Assert.assertEquals("DEFAULT", this.messageSource.getMessage("test.de", null, new Locale("en")));
+	}
 
-    @Test
-    public void testExistingFr_CHFr_CH() {
-        Assert.assertEquals("FRANCAISE", this.messageSource.getMessage("test.full", null, new Locale("fr", "CH")));
-    }
+	@Test
+	public void testExistingDeIt() {
+		Assert.assertEquals(this.messageSource.getMessage("test.full", null, LocaleContextHolder.getLocale()), this.messageSource
+				.getMessage("test.de", null, new Locale("it")));
+	}
 
-    @Test
-    public void testExistingFr_CHFr() {
-        Assert.assertEquals(this.messageSource.getMessage("test.full", null, LocaleContextHolder.getLocale()), this.messageSource
-                .getMessage("test.full", null, new Locale("fr")));
-    }
+	@Test
+	public void testExistingFr_CHFr_CH() {
+		Assert.assertEquals("FRANCAISE", this.messageSource.getMessage("test.full", null, new Locale("fr", "CH")));
+	}
 
-    public void setMessageSource(MessageSource messageSource) {
-        this.messageSource = messageSource;
-    }
+	@Test
+	public void testExistingFr_CHFr() {
+		Assert.assertEquals(this.messageSource.getMessage("test.full", null, LocaleContextHolder.getLocale()), this.messageSource
+				.getMessage("test.full", null, new Locale("fr")));
+	}
+
+	public void setMessageSource(MessageSource messageSource) {
+		this.messageSource = messageSource;
+	}
 }

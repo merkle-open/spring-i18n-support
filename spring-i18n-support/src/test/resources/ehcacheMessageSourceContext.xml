@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	     http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	     http://www.springframework.org/schema/context
+	   	 http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	   	 http://www.springframework.org/schema/aop
+	   	 http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+	   	 http://www.springframework.org/schema/jdbc
+	   	 http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+	   	 http://www.springframework.org/schema/tx
+	   	 http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- EHCache: Cache configurations -->
+    <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+        <property name="acceptExisting" value="true"/>
+        <property name="configLocation">
+            <value>classpath:ehcache.xml</value>
+        </property>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSourceSimple"/>
+    </bean>
+
+    <bean id="messageSource" class="com.namics.oss.spring.support.i18n.EhCacheDaoMessageSource">
+        <property name="messageSourceDao" ref="jdbcMessageSourceDao"/>
+        <property name="formatCache">
+            <bean class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+                <property name="cacheManager" ref="cacheManager"/>
+                <property name="cacheName">
+                    <!-- Name of the cache in the ehcache.xml -->
+                    <value>com.namics.oss.spring.support.i18n.FORMAT</value>
+                </property>
+                <property name="blocking" value="true"/>
+            </bean>
+        </property>
+        <property name="messageCache">
+            <bean class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+                <property name="cacheManager" ref="cacheManager"/>
+                <property name="cacheName">
+                    <!-- Name of the cache in the ehcache.xml -->
+                    <value>com.namics.oss.spring.support.i18n.MESSAGE</value>
+                </property>
+                <property name="blocking" value="true"/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="jdbcMessageSourceDao" class="com.namics.oss.spring.support.i18n.dao.SimpleJdbcMessageSourceDao">
+        <property name="dataSource" ref="dataSourceSimple"/>
+    </bean>
+
+    <jdbc:embedded-database id="dataSourceSimple" type="H2">
+        <jdbc:script location="classpath:/jdbc/schema.sql"/>
+        <jdbc:script location="classpath:/jdbc/data.sql"/>
+    </jdbc:embedded-database>
+
+</beans>

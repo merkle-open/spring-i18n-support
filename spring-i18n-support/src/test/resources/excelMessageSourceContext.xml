@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	     http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	     http://www.springframework.org/schema/context
+	   	 http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	   	 http://www.springframework.org/schema/aop
+	   	 http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+	
+	<bean id="noFallbackMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="excelMessageSourceDao" />
+	</bean>
+	<bean id="fallbackUnknownMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="excelMessageSourceDao" />
+		<property name="fallbacks">
+			<map>
+				<entry key="1" value="de" />
+				<entry key="2" value="fr" />
+			</map>
+		</property>
+		<property name="fallbackForUnknownLanguages" value="true" />
+	</bean>
+	
+	<bean id="fallbackKnownMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="excelMessageSourceDao" />
+		<property name="fallbacks">
+			<map>
+				<entry key="1" value="de" />
+				<entry key="2" value="fr" />
+			</map>
+		</property>
+		<property name="fallbackForKnownLanguages" value="true" />
+	</bean>
+	
+	<bean id="fallbackAllMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="excelMessageSourceDao" />
+		<property name="fallbacks">
+			<map>
+				<entry key="1" value="de" />
+				<entry key="2" value="fr" />
+			</map>
+		</property>
+		<property name="fallbackForUnknownLanguages" value="true" />
+		<property name="fallbackForKnownLanguages" value="true" />
+	</bean>
+	
+	<bean id="excelMessageSourceDao" class="com.namics.oss.spring.support.i18n.dao.ExcelMessageSourceDao">
+		<property name="resource" value="classpath:/excel/test-excel-source.xls"/>
+		<property name="excelReader" ref="excelReader" />
+	</bean>
+	<bean id="excelReader" class="com.namics.oss.spring.support.i18n.excel.ExcelReader" />
+</beans>

@@ -1,0 +1,41 @@
+<html>
+<head>
+
+	<meta name="n-vendor" content="Namics AG www.namics.com"/>
+	<meta name="n-version" content="unknown" data-th-content="${project.version}" data-th-if="${project}"/>
+	<meta name="n-build-number" content="unknown" data-th-content="${project.buildNumber}" data-th-if="${project}"/>
+	<meta name="n-build-date" content="unknown" data-th-content="${project.buildDate}" data-th-if="${project}"/>
+	<meta name="n-server-time" content="unknown" data-th-content="${project.serverTime}" data-th-if="${project}"/>
+	<meta name="n-server-timezone" content="unknown" data-th-content="${project.serverTimeZone}" data-th-if="${project}"/>
+
+	<title>Namics. Spring i18n Demo</title>
+
+	<meta charset="utf-8"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+	<meta name="_csrf" data-th-if="${_csrf != null and _csrf.token != null}" data-th-content="${_csrf.token}"/>
+	<meta name="_csrf_header" data-th-if="${_csrf != null and _csrf.headerName != null}" data-th-content="${_csrf.headerName}"/>
+
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
+		  data-th-href="@{/webjars/bootstrap/3.3.4/css/bootstrap.min.css}"/>
+</head>
+
+<style>
+	iframe.frame {
+		width: 100%;
+		min-height: 300px;
+		height: 50%;
+		border: none;
+		padding-top: 10px;
+	}
+</style>
+<body>
+
+<h1>Spring Boot with Spring i18n Demo</h1>
+
+<div>
+	<iframe class="frame" data-th-src="@{'/i18n/list.html'}"></iframe>
+</div>
+
+</body>
+</html>

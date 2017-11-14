@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	     http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	     http://www.springframework.org/schema/context
+	   	 http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	   	 http://www.springframework.org/schema/aop
+	   	 http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+	   	 http://www.springframework.org/schema/jdbc
+	   	 http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+	   	 http://www.springframework.org/schema/tx
+	   	 http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+	<bean id="noFallbackMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="jdbcMessageSourceDao" />
+	</bean>
+	<bean id="fallbackUnknownMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="jdbcMessageSourceDao" />
+		<property name="fallbacks">
+			<map>
+				<entry key="1" value="de" />
+				<entry key="2" value="fr" />
+			</map>
+		</property>
+		<property name="fallbackForUnknownLanguages" value="true" />
+	</bean>
+	
+	<bean id="fallbackKnownMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="jdbcMessageSourceDao" />
+		<property name="fallbacks">
+			<map>
+				<entry key="1" value="de" />
+				<entry key="2" value="fr" />
+			</map>
+		</property>
+		<property name="fallbackForKnownLanguages" value="true" />
+	</bean>
+	
+	<bean id="fallbackAllMessageSource" class="com.namics.oss.spring.support.i18n.DaoMessageSource">
+		<property name="messageSourceDao" ref="jdbcMessageSourceDao" />
+		<property name="fallbacks">
+			<map>
+				<entry key="1" value="de" />
+				<entry key="2" value="fr" />
+			</map>
+		</property>
+		<property name="fallbackForUnknownLanguages" value="true" />
+		<property name="fallbackForKnownLanguages" value="true" />
+	</bean>
+
+
+	<bean id="jdbcMessageSourceDao" class="com.namics.oss.spring.support.i18n.dao.SimpleJdbcMessageSourceDao">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<jdbc:embedded-database id="dataSource" type="H2">
+		<jdbc:script location="classpath:/jdbc/schema.sql" />
+		<jdbc:script location="classpath:/jdbc/data.sql" />
+	</jdbc:embedded-database>
+
+</beans>

@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.text.MessageFormat;
 import java.util.Locale;
 
+import static org.springframework.util.StringUtils.hasText;
+
 /**
  * MessageSource that resolves the messages from a configurable DAO Object without any cache. This is the simplest implementation of
  * AbstractDaoMessageSource without any caching. This implementation causes a lot of load on the DAO! If you do not have real time update requirements
@@ -34,6 +36,13 @@ public class NoCacheDaoMessageSource extends AbstractDaoMessageSource {
 		try {
 			String messageForLocale = this.getMessageForLocale(code, locale);
 			if (messageForLocale != null) {
+
+				// Escape ticks even if no placeholders are present.
+				// Method getMessageForLocale does already escape ticks if placeholders exist.
+				if (hasText(messageForLocale) && messageForLocale.contains("'") && !REGEX_PLACEHOLDER.matcher(messageForLocale).find()) {
+					messageForLocale = messageForLocale.replaceAll("'", "''");
+				}
+
 				return this.createMessageFormat(messageForLocale, locale);
 			}
 		} catch (Exception ex) {

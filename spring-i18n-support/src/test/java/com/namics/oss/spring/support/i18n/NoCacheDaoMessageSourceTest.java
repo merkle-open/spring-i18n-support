@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +29,11 @@ public class NoCacheDaoMessageSourceTest {
 
     @Before
     public void init() {
+
+        // assert default
+        assertFalse(candidate.isAlwaysEscapeTicks());
+
+        candidate.setAlwaysEscapeTicks(true);
         candidate.setMessageSourceDao(messageSourceDaoMock);
     }
 
@@ -75,6 +81,26 @@ public class NoCacheDaoMessageSourceTest {
 
         String message = "'text' --> not escaped by default since no placeholder present";
         String messageExpected = "'text' --> not escaped by default since no placeholder present";
+
+        when(messageSourceDaoMock.findByCodeAndLang(code, lang))
+                .thenReturn(Arrays.asList(
+                        new MessageResource().code(code)
+                                .lang(lang)
+                                .message(message)));
+
+
+        String resolvedMessage = candidate.getMessage(code,new Object[]{"Arg1Value"}, new Locale(lang));
+
+        assertEquals(messageExpected, resolvedMessage);
+    }
+
+    @Test
+    public void citeNotEscapedSinceWithArgsNoPlaceholderDoNotEscapeTicks() {
+
+        candidate.setAlwaysEscapeTicks(false);
+
+        String message = "'text' --> not escaped by default since no placeholder present";
+        String messageExpected = "text --> not escaped by default since no placeholder present";
 
         when(messageSourceDaoMock.findByCodeAndLang(code, lang))
                 .thenReturn(Arrays.asList(

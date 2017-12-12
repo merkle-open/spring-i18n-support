@@ -60,7 +60,7 @@ public abstract class AbstractDaoMessageSource extends AbstractMessageSource imp
 	 */
 	private boolean fallbackForUnknownLanguages;
 
-	private static final Pattern REGEX_PLACEHOLDER = Pattern.compile("\\{[0-9]+\\}");
+	protected static final Pattern REGEX_PLACEHOLDER = Pattern.compile("\\{[0-9]+\\}");
 
 	/**
 	 * {@inheritDoc}

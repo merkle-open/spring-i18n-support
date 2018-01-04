@@ -3,7 +3,7 @@
 
     <groupId>com.namics.oss.spring.support.i18n</groupId>
     <artifactId>spring-i18n-support-pom</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
@@ -293,6 +293,12 @@
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>1.4.192</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>2.13.0</version>
+                <scope>test</scope>
             </dependency>
 
         </dependencies>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExcelMessageSourceDao.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.dao</a> &gt; <span class="el_source">ExcelMessageSourceDao.java</span></div><h1>ExcelMessageSourceDao.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.dao;
+
+import com.namics.oss.spring.support.i18n.context.support.Reloadable;
+import com.namics.oss.spring.support.i18n.dao.jpa.model.MessageResource;
+import com.namics.oss.spring.support.i18n.excel.ExcelReader;
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.exception.ReloadableResourceException;
+import com.namics.oss.spring.support.i18n.model.MessageCacheKey;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Required;
+import org.springframework.core.io.Resource;
+
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+import java.util.Map.Entry;
+
+/**
+ * ExcelMessageSourceDao to serve messages read from a configured excel file.
+ *
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Oct 14, 2010
+ */
+<span class="fc" id="L35">public class ExcelMessageSourceDao implements MessageSourceDao, InitializingBean, Reloadable {</span>
+
+<span class="fc" id="L37">	private static final Logger LOG = LoggerFactory.getLogger(ExcelMessageSourceDao.class);</span>
+
+	private Resource resource;
+
+	private ExcelReader excelReader;
+
+<span class="fc" id="L43">	private Map&lt;MessageCacheKey, MessageResource&gt; messages = new TreeMap&lt;&gt;();</span>
+
+<span class="fc" id="L45">	private List&lt;String&gt; availableLanguages = new ArrayList&lt;&gt;();</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet()
+	 */
+	@PostConstruct
+	@Override
+	public void afterPropertiesSet() throws IOException, I18nException {
+<span class="fc" id="L55">		LOG.info(&quot;Setup message source with input file &quot; + this.resource.getFilename());</span>
+<span class="fc" id="L56">		InputStream in = this.resource.getInputStream();</span>
+<span class="fc" id="L57">		List&lt;MessageResourceEntry&gt; data = this.excelReader.processExcel(in);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">		if (!CollectionUtils.isEmpty(data)) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">			for (MessageResourceEntry resource : data) {</span>
+<span class="fc" id="L60">				String code = resource.getCodeId();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">				for (Entry&lt;Locale, String&gt; entry : resource.getNameMappings().entrySet()) {</span>
+<span class="fc" id="L62">					Locale locale = entry.getKey();</span>
+<span class="fc" id="L63">					String value = entry.getValue();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">					if (!this.availableLanguages.contains(locale.toString())) {</span>
+<span class="fc" id="L65">						this.availableLanguages.add(locale.toString());</span>
+					}
+<span class="fc" id="L67">					MessageCacheKey key = new MessageCacheKey(locale, code);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">					if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L69">						LOG.debug(&quot;Create cache entry for &quot; + ToStringBuilder.reflectionToString(key, ToStringStyle.SHORT_PREFIX_STYLE));</span>
+					}
+<span class="fc" id="L71">					this.messages.put(key, new MessageResource().code(code).lang(locale.toString()).message(value));</span>
+<span class="fc" id="L72">				}</span>
+<span class="fc" id="L73">			}</span>
+		}
+<span class="fc" id="L75">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see Reloadable#reload()
+	 */
+	@Override
+	public void reload() throws ReloadableResourceException {
+		try {
+<span class="nc" id="L85">			afterPropertiesSet();</span>
+<span class="nc" id="L86">		} catch (Exception e) {</span>
+<span class="nc" id="L87">			throw new ReloadableResourceException(&quot;Problem reloading the message source&quot;, e);</span>
+<span class="nc" id="L88">		}</span>
+<span class="nc" id="L89">	}</span>
+
+	@Override
+	public List&lt;String&gt; findDistinctLang() {
+<span class="fc" id="L93">		return this.availableLanguages;</span>
+	}
+
+	/**
+	 * Setter for resource. @param resource the resource to set
+	 */
+	@Required
+	public void setResource(Resource resource) {
+<span class="fc" id="L101">		this.resource = resource;</span>
+<span class="fc" id="L102">	}</span>
+
+	/**
+	 * Setter for excelReader. @param excelReader the excelReader to set
+	 */
+	@Required
+	public void setExcelReader(ExcelReader excelReader) {
+<span class="fc" id="L109">		this.excelReader = excelReader;</span>
+<span class="fc" id="L110">	}</span>
+
+	@Override
+	public List&lt;MessageResource&gt; findAll() {
+<span class="nc" id="L114">		List&lt;MessageResource&gt; resources = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L115">		resources.addAll(this.messages.values());</span>
+<span class="nc" id="L116">		return Collections.unmodifiableList(resources);</span>
+	}
+
+	@Override
+	public List&lt;MessageResource&gt; findByCodeAndLang(String code, String lang) {
+<span class="fc" id="L121">		List&lt;MessageResource&gt; resources = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L122">		MessageCacheKey key = new MessageCacheKey(new Locale(lang), code);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (this.messages.containsKey(key)) {</span>
+<span class="fc" id="L124">			resources.add(this.messages.get(key));</span>
+		}
+<span class="fc" id="L126">		return resources;</span>
+	}
+
+	@Override
+	public MessageResource findTopByCodeAndLang(String code, String lang) {
+<span class="nc" id="L131">		List&lt;MessageResource&gt; byCodeAndLang = findByCodeAndLang(code, lang);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">		if (!org.springframework.util.CollectionUtils.isEmpty(byCodeAndLang)) {</span>
+<span class="nc" id="L133">			return byCodeAndLang.get(0);</span>
+		}
+<span class="nc" id="L135">		return null;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

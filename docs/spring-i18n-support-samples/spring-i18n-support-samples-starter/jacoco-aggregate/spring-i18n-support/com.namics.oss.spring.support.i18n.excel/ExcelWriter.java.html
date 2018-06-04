@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExcelWriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.excel</a> &gt; <span class="el_source">ExcelWriter.java</span></div><h1>ExcelWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.excel;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Map.Entry;
+
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import com.namics.oss.spring.support.i18n.util.LocaleComparator;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Util class that uses apache poi library to write an excel resource file in namics format.
+ * The excel sheet may contain several sheets.
+ * Each sheet of the file will have the default form:
+ * &lt;ul&gt;
+ * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+ * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+ * &lt;/ul&gt;
+ * The header columns are defined by the provided languages in the resources lists.
+ * The concrete row and column numbers can be configured to match more requirements like comments.
+ * 
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Oct 18, 2010
+ */
+public class ExcelWriter implements Excel
+{
+
+<span class="fc" id="L54">	private static final Logger LOG = LoggerFactory.getLogger(ExcelWriter.class);</span>
+
+	/** Default value for languageHeaderRow = 0. */
+	public static final int DEFAULT_HEADER_ROW = 0;
+
+	/** Default value for keyColumn = 0. */
+	public static final int DEFAULT_KEY_COLUMN = 0;
+
+	/** Default value for columnWidth = 60 letters = 60 * 256. */
+	public static final int DEFAULT_COLUMN_WIDTH = 256 * 60;
+
+	/** Default value for firstLanguageColumn = 0. */
+	public static final int DEFAULT_FIRST_LANG_COL = 1;
+
+	/** Default value for zoom in sheets 75%. */
+	public static final int DEFAULT_ZOOM = 75;
+
+	/** languageHeaderRow defines the row number in the sheet that defines the header (default:0, first row). */
+<span class="pc" id="L72">	private int languageHeaderRow = DEFAULT_HEADER_ROW;</span>
+
+	/** keyColumn defines the column that is used for the message code (default:0, the first column). */
+<span class="pc" id="L75">	private int keyColumn = DEFAULT_KEY_COLUMN;</span>
+
+	/** firstLanguageColumn defines the first column used for languages (default:1, second column). */
+<span class="pc" id="L78">	private int firstLanguageColumn = DEFAULT_FIRST_LANG_COL;</span>
+
+<span class="pc" id="L80">	private String defaultSheetName = &quot;messages&quot;;</span>
+
+	/** columnWidth for the language columns, key column is autosized. */
+<span class="pc" id="L83">	private int columnWidth = DEFAULT_COLUMN_WIDTH;</span>
+
+	/** Zoom level to use in excel sheets, express in integer percent (default: 75 = 75%). */
+<span class="pc" id="L86">	private int zoom = DEFAULT_ZOOM;</span>
+
+	/**
+	 * Constructor to create writer for default excel layout.
+	 */
+	public ExcelWriter()
+	{
+<span class="fc" id="L93">		super();</span>
+<span class="fc" id="L94">	}</span>
+
+	/**
+	 * Constructor to create a writer for a customized excel.
+	 * You can use the DEFAULT_* constants to set defaults for certain values.
+	 * 
+	 * @param languageHeaderRow defines the row number in the sheet that defines the header (default:0, first row).
+	 * @param keyColumn defines the column that is used for the message code (default:0, the first column).
+	 * @param firstLanguageColumn defines the first column used for languages (default:1, second column).
+	 */
+	public ExcelWriter(int languageHeaderRow, int keyColumn, int firstLanguageColumn)
+	{
+<span class="nc" id="L106">		super();</span>
+<span class="nc" id="L107">		this.languageHeaderRow = languageHeaderRow;</span>
+<span class="nc" id="L108">		this.keyColumn = keyColumn;</span>
+<span class="nc" id="L109">		this.firstLanguageColumn = firstLanguageColumn;</span>
+<span class="nc" id="L110">	}</span>
+
+	/**
+	 * Creates an excel file to export message data.
+	 * The excel workbook will have one sheet.
+	 * Each sheet of the file will have the default form:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+	 * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The header columns are defined by the provided languages in the resources lists.
+	 * The concrete row and column numbers can be configured to match more requirements like comments.
+	 * 
+	 * @param input a list of message information to write to excel
+	 * @param output file to create output in.
+	 * @param format use constants FORMAT_EXCEL_97 or FORMAT_EXCEL_2007
+	 * @throws I18nException if a problem occures
+	 */
+	public void createExcel(List&lt;MessageResourceEntry&gt; input,
+							File output,
+							String format) throws I18nException
+	{
+<span class="fc" id="L132">		FileOutputStream fout = null;</span>
+		try
+		{
+<span class="fc" id="L135">			LOG.info(&quot;Create Stream from File&quot;);</span>
+<span class="fc" id="L136">			fout = new FileOutputStream(output);</span>
+<span class="fc" id="L137">			createExcel(input, fout, format);</span>
+		}
+<span class="nc" id="L139">		catch (IOException e)</span>
+		{
+<span class="nc" id="L141">			throw new I18nException(&quot;Problem writing to stream&quot;, e);</span>
+		}
+		finally
+		{
+<span class="fc" id="L145">			saveCloseStream(fout);</span>
+		}
+<span class="fc" id="L147">	}</span>
+
+	/**
+	 * Creates an excel file to export message data.
+	 * The excel workbook will have one sheet.
+	 * Each sheet of the file will have the default form:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+	 * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The header columns are defined by the provided languages in the resources lists.
+	 * The concrete row and column numbers can be configured to match more requirements like comments.
+	 * 
+	 * @param input a list of message information to write to excel
+	 * @param output if you want to create xls (Excel 97-2003) files, DO NOT use BufferedOutputStream due to library
+	 *            issue.
+	 * @param format use constants FORMAT_EXCEL_97 or FORMAT_EXCEL_2007
+	 * @throws I18nException if a problem occures
+	 */
+	public void createExcel(List&lt;MessageResourceEntry&gt; input,
+							OutputStream output,
+							String format) throws I18nException
+	{
+<span class="fc" id="L170">		Workbook wb = createWorkbook(format);</span>
+<span class="fc" id="L171">		createSheet(input, &quot;DEFAULT&quot;, wb);</span>
+		try
+		{
+<span class="fc" id="L174">			LOG.info(&quot;Write data to output stream&quot;);</span>
+<span class="fc" id="L175">			wb.write(output);</span>
+		}
+<span class="nc" id="L177">		catch (IOException e)</span>
+		{
+<span class="nc" id="L179">			throw new I18nException(&quot;Problem writing to stream&quot;, e);</span>
+<span class="fc" id="L180">		}</span>
+<span class="fc" id="L181">	}</span>
+
+	/**
+	 * Creates an excel file to export message data.
+	 * The excel workbook will have several sheets named after the map key.
+	 * Each sheet of the file will have the default form:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+	 * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The header columns are defined by the provided languages in the resources lists.
+	 * The concrete row and column numbers can be configured to match more requirements like comments.
+	 * 
+	 * @param input a list of message information to write to excel
+	 * @param output file to create output in.
+	 * @param format use constants FORMAT_EXCEL_97 or FORMAT_EXCEL_2007
+	 * @throws I18nException if a problem occures
+	 */
+	public void createExcel(Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; input,
+							File output,
+							String format) throws I18nException
+	{
+<span class="fc" id="L203">		FileOutputStream fout = null;</span>
+		try
+		{
+<span class="fc" id="L206">			LOG.info(&quot;Create Stream from File&quot;);</span>
+<span class="fc" id="L207">			fout = new FileOutputStream(output);</span>
+<span class="fc" id="L208">			createExcel(input, fout, format);</span>
+		}
+<span class="nc" id="L210">		catch (IOException e)</span>
+		{
+<span class="nc" id="L212">			throw new I18nException(&quot;Problem writing to stream&quot;, e);</span>
+		}
+		finally
+		{
+<span class="fc" id="L216">			saveCloseStream(fout);</span>
+		}
+<span class="fc" id="L218">	}</span>
+
+	/**
+	 * Creates an excel file to export message data.
+	 * The excel workbook will have several sheets named after the map key.
+	 * Each sheet of the file will have the default form:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+	 * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The header columns are defined by the provided languages in the resources lists.
+	 * The concrete row and column numbers can be configured to match more requirements like comments.
+	 * 
+	 * @param input a list of message information to write to excel
+	 * @param output if you want to create xls (Excel 97-2003) files, DO NOT use BufferedOutputStream due to library
+	 *            issue.
+	 * @param format use constants FORMAT_EXCEL_97 or FORMAT_EXCEL_2007
+	 * @throws I18nException if a problem occures
+	 */
+	public void createExcel(Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; input,
+							OutputStream output,
+							String format) throws I18nException
+	{
+<span class="fc" id="L241">		Workbook wb = createWorkbook(format);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">		for (Entry&lt;String, List&lt;MessageResourceEntry&gt;&gt; entry : input.entrySet())</span>
+		{
+<span class="fc" id="L244">			createSheet(entry.getValue(), entry.getKey(), wb);</span>
+<span class="fc" id="L245">		}</span>
+		try
+		{
+<span class="fc" id="L248">			LOG.info(&quot;Write data to output stream&quot;);</span>
+<span class="fc" id="L249">			wb.write(output);</span>
+		}
+<span class="nc" id="L251">		catch (IOException e)</span>
+		{
+<span class="nc" id="L253">			throw new I18nException(&quot;Problem writing to stream&quot;, e);</span>
+<span class="fc" id="L254">		}</span>
+<span class="fc" id="L255">	}</span>
+
+	/**
+	 * Creates the workbook in the required format.
+	 * 
+	 * @param format format use constants FORMAT_EXCEL_97 or FORMAT_EXCEL_2007
+	 * @return the workbook
+	 */
+	private Workbook createWorkbook(String format)
+	{
+<span class="fc" id="L265">		Workbook wb = null;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">		if (FORMAT_EXCEL_2007.equals(format))</span>
+		{
+<span class="fc" id="L268">			wb = new XSSFWorkbook();</span>
+<span class="fc" id="L269">			LOG.info(&quot;Create workbook for Excel 2007+&quot;);</span>
+		}
+<span class="fc bfc" id="L271" title="All 2 branches covered.">		else if (FORMAT_EXCEL_97.equals(format))</span>
+		{
+<span class="fc" id="L273">			wb = new HSSFWorkbook();</span>
+<span class="fc" id="L274">			LOG.info(&quot;Create workbook for Excel 97-2003&quot;);</span>
+		}
+		else
+		{
+<span class="fc" id="L278">			wb = new XSSFWorkbook();</span>
+<span class="fc" id="L279">			LOG.info(&quot;No Type selected. Create workbook for Excel 2007+&quot;);</span>
+		}
+<span class="fc" id="L281">		return wb;</span>
+	}
+
+	/**
+	 * Creates an excel sheet in the provided workbook using provided parameters.
+	 * 
+	 * @param input the data to put in the sheet-
+	 * @param sheetName the name to user for the sheet.
+	 * @param wb the workbook to create the sheet in.
+	 */
+	private void createSheet(	List&lt;MessageResourceEntry&gt; input,
+								String sheetName,
+								Workbook wb)
+	{
+		// create a new sheet
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">		String name = StringUtils.isBlank(sheetName) ? this.defaultSheetName : sheetName;</span>
+<span class="fc" id="L297">		LOG.info(&quot;Create sheet with name &quot; + name);</span>
+<span class="fc" id="L298">		Sheet sheet = wb.createSheet(name);</span>
+<span class="fc" id="L299">		sheet.setZoom(this.zoom, 100);</span>
+
+<span class="fc" id="L301">		Map&lt;Locale, Integer&gt; langs = getLanguageInformation(input);</span>
+<span class="fc" id="L302">		createHeader(sheet, langs);</span>
+
+<span class="fc" id="L304">		CellStyle keyStyle = sheet.getWorkbook().createCellStyle();</span>
+<span class="fc" id="L305">		keyStyle.setAlignment(CellStyle.ALIGN_LEFT);</span>
+<span class="fc" id="L306">		keyStyle.setBorderBottom(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L307">		keyStyle.setBorderRight(CellStyle.BORDER_MEDIUM);</span>
+<span class="fc" id="L308">		Font f = sheet.getWorkbook().createFont();</span>
+<span class="fc" id="L309">		f.setBoldweight(Font.BOLDWEIGHT_NORMAL);</span>
+<span class="fc" id="L310">		keyStyle.setFont(f);</span>
+
+<span class="fc" id="L312">		CellStyle valueStyle = sheet.getWorkbook().createCellStyle();</span>
+<span class="fc" id="L313">		valueStyle.setAlignment(CellStyle.ALIGN_LEFT);</span>
+<span class="fc" id="L314">		valueStyle.setVerticalAlignment(CellStyle.VERTICAL_TOP);</span>
+<span class="fc" id="L315">		valueStyle.setBorderBottom(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L316">		valueStyle.setBorderRight(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L317">		valueStyle.setBorderTop(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L318">		valueStyle.setBorderLeft(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L319">		valueStyle.setFont(f);</span>
+<span class="fc" id="L320">		valueStyle.setWrapText(true);</span>
+
+<span class="fc" id="L322">		CellStyle emptyStyle = sheet.getWorkbook().createCellStyle();</span>
+<span class="fc" id="L323">		emptyStyle.setAlignment(CellStyle.ALIGN_LEFT);</span>
+<span class="fc" id="L324">		emptyStyle.setVerticalAlignment(CellStyle.VERTICAL_TOP);</span>
+<span class="fc" id="L325">		emptyStyle.setBorderBottom(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L326">		emptyStyle.setBorderRight(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L327">		emptyStyle.setBorderTop(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L328">		emptyStyle.setBorderLeft(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L329">		emptyStyle.setFont(f);</span>
+<span class="fc" id="L330">		emptyStyle.setFillForegroundColor(IndexedColors.LAVENDER.getIndex());</span>
+<span class="fc" id="L331">		emptyStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);</span>
+<span class="fc" id="L332">		emptyStyle.setWrapText(true);</span>
+
+<span class="fc" id="L334">		LOG.info(&quot;Write data to sheet &quot; + name);</span>
+<span class="fc" id="L335">		int rowIndex = this.languageHeaderRow + 1;</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">		for (MessageResourceEntry entry : input)</span>
+		{
+<span class="fc" id="L338">			Row row = sheet.createRow(rowIndex);</span>
+<span class="fc" id="L339">			createContentRow(entry, row, langs, keyStyle, valueStyle, emptyStyle);</span>
+<span class="fc" id="L340">			rowIndex++;</span>
+<span class="fc" id="L341">		}</span>
+<span class="fc" id="L342">		sizeColumns(sheet, langs);</span>
+<span class="fc" id="L343">		sheet.createFreezePane(this.firstLanguageColumn, this.languageHeaderRow + 1, this.firstLanguageColumn, this.languageHeaderRow + 1);</span>
+<span class="fc" id="L344">	}</span>
+
+	/**
+	 * Creates the header row for the sheet provided.
+	 * 
+	 * @param sheet the sheet to create the header for
+	 * @param langs the languages to use in the header
+	 */
+	private void createHeader(	Sheet sheet,
+								Map&lt;Locale, Integer&gt; langs)
+	{
+<span class="fc" id="L355">		LOG.info(&quot;Create header row with languages &quot; + langs.toString());</span>
+<span class="fc" id="L356">		CellStyle key = sheet.getWorkbook().createCellStyle();</span>
+<span class="fc" id="L357">		key.setAlignment(CellStyle.ALIGN_CENTER);</span>
+<span class="fc" id="L358">		key.setBorderBottom(CellStyle.BORDER_MEDIUM);</span>
+<span class="fc" id="L359">		key.setBorderRight(CellStyle.BORDER_MEDIUM);</span>
+<span class="fc" id="L360">		Font f = sheet.getWorkbook().createFont();</span>
+<span class="fc" id="L361">		f.setBoldweight(Font.BOLDWEIGHT_BOLD);</span>
+<span class="fc" id="L362">		key.setFont(f);</span>
+
+<span class="fc" id="L364">		CellStyle hlang = sheet.getWorkbook().createCellStyle();</span>
+<span class="fc" id="L365">		hlang.setAlignment(CellStyle.ALIGN_CENTER);</span>
+<span class="fc" id="L366">		hlang.setBorderBottom(CellStyle.BORDER_MEDIUM);</span>
+<span class="fc" id="L367">		hlang.setBorderRight(CellStyle.BORDER_THIN);</span>
+<span class="fc" id="L368">		hlang.setFont(f);</span>
+
+<span class="fc" id="L370">		Row row = sheet.createRow(this.languageHeaderRow);</span>
+<span class="fc" id="L371">		Cell cell = row.createCell(this.keyColumn);</span>
+<span class="fc" id="L372">		cell.setCellStyle(key);</span>
+<span class="fc" id="L373">		cell.setCellValue(&quot;KEY&quot;);</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">		for (Entry&lt;Locale, Integer&gt; lang : langs.entrySet())</span>
+		{
+<span class="fc" id="L376">			cell = row.createCell(lang.getValue());</span>
+<span class="fc" id="L377">			cell.setCellStyle(hlang);</span>
+<span class="fc" id="L378">			cell.setCellValue(lang.getKey().toString());</span>
+<span class="fc" id="L379">		}</span>
+<span class="fc" id="L380">	}</span>
+
+	/**
+	 * Does the sizing of the colums, for a first draft the auto size mechanism of excel is used.
+	 * 
+	 * @param sheet the sheet where the columns should be sized
+	 * @param langs the languages to calculate the columns to be sized.
+	 */
+	private void sizeColumns(	Sheet sheet,
+								Map&lt;Locale, Integer&gt; langs)
+	{
+<span class="fc" id="L391">		LOG.info(&quot;Size columns of sheet &quot; + sheet.getSheetName());</span>
+<span class="fc" id="L392">		sheet.autoSizeColumn(this.keyColumn, true);</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">		for (Integer lang : langs.values())</span>
+		{
+<span class="fc" id="L395">			sheet.setColumnWidth(lang, this.columnWidth);</span>
+<span class="fc" id="L396">		}</span>
+<span class="fc" id="L397">	}</span>
+
+	/**
+	 * Creates a single content row using the provided styles and data.
+	 * 
+	 * @param entry the data to be filled in that line.
+	 * @param row the row to write the cells in
+	 * @param langs the languages to get column indexes.
+	 * @param keyStyle style to use for the key column (this.keyColumn)
+	 * @param valueStyle the style to use for a content cell with content.
+	 * @param emptyStyle the style to use for a content cell without content.
+	 */
+	private void createContentRow(	MessageResourceEntry entry,
+									Row row,
+									Map&lt;Locale, Integer&gt; langs,
+									CellStyle keyStyle,
+									CellStyle valueStyle,
+									CellStyle emptyStyle)
+	{
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">		if (LOG.isDebugEnabled())</span>
+		{
+<span class="nc" id="L418">			LOG.debug(&quot;Create content row [&quot; + row.getRowNum() + &quot;] with &quot;</span>
+<span class="nc" id="L419">					+ ToStringBuilder.reflectionToString(entry, ToStringStyle.SHORT_PREFIX_STYLE));</span>
+		}
+<span class="fc" id="L421">		Cell cell = row.createCell(this.keyColumn);</span>
+<span class="fc" id="L422">		cell.setCellValue(entry.getCodeId());</span>
+<span class="fc" id="L423">		cell.setCellStyle(keyStyle);</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">		for (Integer col : langs.values())</span>
+		{
+<span class="fc" id="L426">			cell = row.createCell(col);</span>
+<span class="fc" id="L427">			cell.setCellStyle(emptyStyle);</span>
+<span class="fc" id="L428">		}</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">		for (Entry&lt;Locale, String&gt; message : entry.getNameMappings().entrySet())</span>
+		{
+<span class="fc" id="L431">			Integer col = langs.get(message.getKey());</span>
+<span class="fc" id="L432">			cell = row.getCell(col);</span>
+<span class="fc" id="L433">			cell.setCellStyle(valueStyle);</span>
+<span class="fc" id="L434">			cell.setCellValue(message.getValue());</span>
+<span class="fc" id="L435">		}</span>
+<span class="fc" id="L436">	}</span>
+
+	/**
+	 * Extracts the language information form the data.
+	 * This method iterates all MessagaResourceEntries to get all available languages used in the data.
+	 * 
+	 * @param entries the entries to extract the used langs
+	 * @return the Map to map a certain language to a special column in the process of content row writing
+	 */
+	private Map&lt;Locale, Integer&gt; getLanguageInformation(List&lt;MessageResourceEntry&gt; entries)
+	{
+<span class="fc" id="L447">		LOG.info(&quot;Extract language information&quot;);</span>
+<span class="fc" id="L448">		SortedSet&lt;Locale&gt; locales = new TreeSet&lt;Locale&gt;(new LocaleComparator());</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">		for (MessageResourceEntry entry : entries)</span>
+		{
+<span class="fc" id="L451">			Map&lt;Locale, String&gt; mappings = entry.getNameMappings();</span>
+<span class="pc bpc" id="L452" title="2 of 4 branches missed.">			if (mappings != null &amp;&amp; !mappings.isEmpty())</span>
+			{
+<span class="fc bfc" id="L454" title="All 2 branches covered.">				for (Locale key : mappings.keySet())</span>
+				{
+<span class="fc" id="L456">					locales.add(key);</span>
+<span class="fc" id="L457">				}</span>
+			}
+<span class="fc" id="L459">		}</span>
+<span class="fc" id="L460">		Map&lt;Locale, Integer&gt; result = new HashMap&lt;Locale, Integer&gt;();</span>
+<span class="fc" id="L461">		int colIndex = this.firstLanguageColumn; // calculate the index column for new languages</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">		for (Locale locale : locales)</span>
+		{
+<span class="fc" id="L464">			result.put(locale, colIndex);</span>
+<span class="fc" id="L465">			colIndex++;</span>
+<span class="fc" id="L466">		}</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">		if (LOG.isDebugEnabled())</span>
+		{
+<span class="nc" id="L469">			LOG.debug(&quot;Extracted languages &quot; + ToStringBuilder.reflectionToString(result, ToStringStyle.SHORT_PREFIX_STYLE));</span>
+		}
+<span class="fc" id="L471">		return result;</span>
+	}
+
+	/**
+	 * Saves the Stream seamless, throws i18nException when error.
+	 * 
+	 * @param fout stream to close.
+	 */
+	private void saveCloseStream(FileOutputStream fout)
+	{
+<span class="fc" id="L481">		LOG.info(&quot;Try to close output stream seamlessly&quot;);</span>
+<span class="pc bpc" id="L482" title="1 of 2 branches missed.">		if (fout != null)</span>
+		{
+			try
+			{
+<span class="fc" id="L486">				fout.flush();</span>
+<span class="fc" id="L487">				fout.close();</span>
+			}
+<span class="nc" id="L489">			catch (IOException e)</span>
+			{
+<span class="nc" id="L491">				throw new I18nException(&quot;Problem closing file stream&quot;, e);</span>
+<span class="fc" id="L492">			}</span>
+		}
+<span class="fc" id="L494">	}</span>
+
+	// CHECKSTYLE:OFF
+	/** Getter for languageHeaderRow. @return the languageHeaderRow */
+	public int getLanguageHeaderRow()
+	{
+<span class="nc" id="L500">		return this.languageHeaderRow;</span>
+	}
+
+	/** Getter for keyColumn. @return the keyColumn */
+	public int getKeyColumn()
+	{
+<span class="nc" id="L506">		return this.keyColumn;</span>
+	}
+
+	/** Getter for firstLanguageColumn. @return the firstLanguageColumn */
+	public int getFirstLanguageColumn()
+	{
+<span class="nc" id="L512">		return this.firstLanguageColumn;</span>
+	}
+
+	// CHECKSTYLE:ON
+
+	/** Getter for defaultSheetName. @return the defaultSheetName */
+	public String getDefaultSheetName()
+	{
+<span class="nc" id="L520">		return this.defaultSheetName;</span>
+	}
+
+	/** Setter for defaultSheetName. @param defaultSheetName the defaultSheetName to set */
+	public void setDefaultSheetName(String defaultSheetName)
+	{
+<span class="nc" id="L526">		this.defaultSheetName = defaultSheetName;</span>
+<span class="nc" id="L527">	}</span>
+
+	/** Getter for columnWidth. @return the columnWidth */
+	public int getColumnWidth()
+	{
+<span class="nc" id="L532">		return this.columnWidth;</span>
+	}
+
+	/** Setter for columnWidth. @param columnWidth the columnWidth to set */
+	public void setColumnWidth(int columnWidth)
+	{
+<span class="nc" id="L538">		this.columnWidth = columnWidth;</span>
+<span class="nc" id="L539">	}</span>
+
+	/** Setter for languageHeaderRow. @param languageHeaderRow the languageHeaderRow to set */
+	public void setLanguageHeaderRow(int languageHeaderRow)
+	{
+<span class="nc" id="L544">		this.languageHeaderRow = languageHeaderRow;</span>
+<span class="nc" id="L545">	}</span>
+
+	/** Setter for keyColumn. @param keyColumn the keyColumn to set */
+	public void setKeyColumn(int keyColumn)
+	{
+<span class="nc" id="L550">		this.keyColumn = keyColumn;</span>
+<span class="nc" id="L551">	}</span>
+
+	/** Setter for firstLanguageColumn. @param firstLanguageColumn the firstLanguageColumn to set */
+	public void setFirstLanguageColumn(int firstLanguageColumn)
+	{
+<span class="nc" id="L556">		this.firstLanguageColumn = firstLanguageColumn;</span>
+<span class="nc" id="L557">	}</span>
+
+	/** Getter for zoom. @return the zoom */
+	public int getZoom()
+	{
+<span class="nc" id="L562">		return this.zoom;</span>
+	}
+
+	/** Setter for zoom. @param zoom the zoom to set */
+	public void setZoom(int zoom)
+	{
+<span class="nc" id="L568">		this.zoom = zoom;</span>
+<span class="nc" id="L569">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

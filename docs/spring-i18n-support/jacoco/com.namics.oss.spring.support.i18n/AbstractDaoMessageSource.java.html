@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractDaoMessageSource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n</a> &gt; <span class="el_source">AbstractDaoMessageSource.java</span></div><h1>AbstractDaoMessageSource.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n;
+
+import com.namics.oss.spring.support.i18n.context.support.Reloadable;
+import com.namics.oss.spring.support.i18n.dao.MessageSourceDao;
+import com.namics.oss.spring.support.i18n.dao.jpa.model.MessageResource;
+import com.namics.oss.spring.support.i18n.exception.ReloadableResourceException;
+import org.apache.commons.lang.LocaleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Required;
+import org.springframework.context.support.AbstractMessageSource;
+import org.springframework.util.StringUtils;
+
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
+/**
+ * MessageSource that resolves the messages from a configurable DAO Object, needs to be implemented.
+ *
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.2 - Oct 14, 2010
+ */
+<span class="fc" id="L29">public abstract class AbstractDaoMessageSource extends AbstractMessageSource implements Reloadable {</span>
+	/**
+	 * Logger-Category.
+	 */
+<span class="fc" id="L33">	private static final Logger LOG = LoggerFactory.getLogger(AbstractDaoMessageSource.class);</span>
+
+	/**
+	 * DAO for getting the message sources.
+	 */
+	private MessageSourceDao messageSourceDao;
+
+	/**
+	 * Sorted Map to configure a fallback order if fallback intended. can be configured in spring context using map element in properties.
+	 * &lt;pre&gt;
+	 * 	&amp;lt;property name=&quot;fallbacks&quot;&gt;
+	 * 		&amp;lt;map&gt;
+	 * 			&amp;lt;entry key=&quot;1&quot; value=&quot;de&quot; /&gt;
+	 * 			&amp;lt;entry key=&quot;2&quot; value=&quot;fr&quot; /&gt;
+	 * 		&amp;lt;/map&gt;
+	 * 	&amp;lt;/property&gt;
+	 * &lt;/pre&gt;
+	 */
+	private SortedMap&lt;Integer, String&gt; fallbacks;
+
+	/**
+	 * message source will try to return fallbacks for languages known in the system, default=false.
+	 */
+	private boolean fallbackForKnownLanguages;
+
+	/**
+	 * message source will try to return fallbacks for languages unknown in the system, default=false.
+	 */
+	private boolean fallbackForUnknownLanguages;
+
+<span class="fc" id="L63">	protected static final Pattern REGEX_PLACEHOLDER = Pattern.compile(&quot;\\{[0-9]+\\}&quot;);</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see Reloadable#reload()
+	 */
+	@Override
+	public void reload() throws ReloadableResourceException {
+		try {
+			// make sure the reloadable dao is reloaded before clear
+<span class="nc bnc" id="L74" title="All 2 branches missed.">			if (this.messageSourceDao instanceof Reloadable) {</span>
+<span class="nc" id="L75">				((Reloadable) this.messageSourceDao).reload();</span>
+			}
+<span class="nc" id="L77">		} catch (Exception ex) {</span>
+<span class="nc" id="L78">			throw new ReloadableResourceException(ex.getMessage(), ex, NoCacheDaoMessageSource.class.getName());</span>
+<span class="nc" id="L79">		}</span>
+<span class="nc" id="L80">	}</span>
+
+	/**
+	 * Resolves Message for a certain locale according to fallback scenarios.
+	 *
+	 * @param code   code of message to resolve
+	 * @param locale locale to resolve the message for
+	 * @return the message string from backend to be used as {@link MessageFormat}
+	 */
+	protected String getMessageForLocale(String code,
+			Locale locale) {
+<span class="fc" id="L91">		String msg = this.getMessageForLocaleFromBackend(code, locale);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (!StringUtils.hasText(msg)) {</span>
+<span class="fc" id="L93">			msg = this.getFallback(code, locale);</span>
+		}
+<span class="fc" id="L95">		msg = this.postProcessMessage(msg);</span>
+<span class="fc" id="L96">		LOG.debug(&quot;Resolved {} for {} : {}&quot;, new Object[] { code, locale, msg });</span>
+<span class="fc" id="L97">		return msg;</span>
+	}
+
+	/**
+	 * Resolves Message for a certain locale form the backend.
+	 *
+	 * @param code   code of message to resolve
+	 * @param locale locale to resolve the message for
+	 * @return the raw message string from backend
+	 */
+	protected String getMessageForLocaleFromBackend(String code,
+			Locale locale) {
+<span class="fc" id="L109">		List&lt;MessageResource&gt; messages = this.messageSourceDao.findByCodeAndLang(code, locale.toString());</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">		if (messages != null &amp;&amp; messages.size() &gt; 0) {</span>
+<span class="fc" id="L111">			return messages.get(0).getMessage();</span>
+		}
+<span class="fc" id="L113">		return null;</span>
+	}
+
+	/**
+	 * Does some post processing on the resolved message.
+	 *
+	 * @param msg
+	 * @return
+	 */
+	protected String postProcessMessage(String msg) {
+<span class="fc" id="L123">		String result = msg;</span>
+<span class="fc bfc" id="L124" title="All 4 branches covered.">		if (StringUtils.hasText(result) &amp;&amp; REGEX_PLACEHOLDER.matcher(result).find()) {</span>
+<span class="fc" id="L125">			result = result.replaceAll(&quot;'&quot;, &quot;''&quot;);</span>
+		}
+<span class="fc" id="L127">		return result;</span>
+	}
+
+	/**
+	 * resolves fallbacks first derived from requested locale, second by configured scenarios.
+	 *
+	 * @param code   code to resolve message
+	 * @param locale language to get the message for
+	 * @return the fallback if any, null else
+	 */
+	protected String getFallback(String code,
+			Locale locale) {
+<span class="fc" id="L139">		Locale country = new Locale(locale.getLanguage(), locale.getCountry());</span>
+<span class="fc" id="L140">		Locale language = new Locale(locale.getLanguage());</span>
+
+		// derived form original requested locale
+<span class="fc" id="L143">		String derived = this.getLocaleBasedFallback(code, locale, country, language);</span>
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		if (derived != null) {</span>
+<span class="fc" id="L146">			return derived;</span>
+		}
+
+<span class="fc" id="L149">		return this.getScenarioFallback(code, locale, country, language);</span>
+	}
+
+	/**
+	 * resolves fallbacks derived from requested locale.
+	 *
+	 * @param code     code to get the fallback message for
+	 * @param locale   the original locale, including possibel variants
+	 * @param country  the language + country locale
+	 * @param language the language only locale
+	 */
+	private String getLocaleBasedFallback(String code,
+			Locale locale,
+			Locale country,
+			Locale language) {
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (StringUtils.hasText(locale.getVariant())) {</span>
+			// use de_CH instead of de_CH_xyz
+<span class="nc" id="L166">			LOG.debug(&quot;Remove variant for country fallback&quot;);</span>
+<span class="nc" id="L167">			String msg = this.getMessageForLocaleFromBackend(code, country);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">			if (StringUtils.hasText(msg)) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">				if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L170">					LOG.debug(&quot;found country fallback for code [&quot; + code + &quot;] lang[&quot; + locale + &quot;] :&quot; + msg);</span>
+				}
+<span class="nc" id="L172">				return msg;</span>
+			}
+		}
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (StringUtils.hasText(locale.getCountry())) {</span>
+			// use de instead of de_CH
+<span class="fc" id="L177">			LOG.debug(&quot;Remove variant and country for language fallback&quot;);</span>
+<span class="fc" id="L178">			String msg = this.getMessageForLocaleFromBackend(code, language);</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (StringUtils.hasText(msg)) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">				if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L181">					LOG.debug(&quot;found language fallback for code [&quot; + code + &quot;] lang[&quot; + locale + &quot;] :&quot; + msg);</span>
+				}
+<span class="fc" id="L183">				return msg;</span>
+			}
+		}
+<span class="fc" id="L186">		return null;</span>
+	}
+
+	/**
+	 * resolves fallbacks by configured scenarios.
+	 *
+	 * @param code     code to get the fallback message for
+	 * @param locale   the original locale, including possibel variants
+	 * @param country  the language + country locale
+	 * @param language the language only locale
+	 */
+	private String getScenarioFallback(String code,
+			Locale locale,
+			Locale country,
+			Locale language) {
+		// fallback scenarios
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L203">			LOG.debug(&quot;Use further fallbacks based on configuration for code[&quot; + code + &quot;] lang[&quot; + locale + &quot;]&quot;);</span>
+		}
+<span class="fc" id="L205">		List&lt;String&gt; locales = this.messageSourceDao.findDistinctLang();</span>
+
+		// fallback languages are based on any existing matching locale de de_CH de_CH_xyz
+<span class="pc bpc" id="L208" title="2 of 6 branches missed.">		boolean langKnown = locales.contains(locale.toString()) || locales.contains(country.toString()) || locales.contains(language.toString());</span>
+
+<span class="fc bfc" id="L210" title="All 8 branches covered.">		if (this.fallbackForUnknownLanguages &amp;&amp; !langKnown || this.fallbackForKnownLanguages &amp;&amp; langKnown) {</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			for (Entry&lt;Integer, String&gt; fallback : this.fallbacks.entrySet()) {</span>
+<span class="fc" id="L212">				String msg = this.getMessageForLocaleFromBackend(code, LocaleUtils.toLocale(fallback.getValue()));</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">				if (StringUtils.hasText(msg)) {</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">					if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L215">						LOG.debug(&quot;found fallback for code [&quot; + code + &quot;] lang[&quot; + locale + &quot;] :&quot; + msg);</span>
+					}
+<span class="fc" id="L217">					return msg;</span>
+				}
+<span class="fc" id="L219">			}</span>
+		}
+<span class="fc" id="L221">		return null;</span>
+	}
+
+	/**
+	 * Writes an exception log.
+	 *
+	 * @param code   message code involved
+	 * @param locale the locale involved
+	 * @param ex     the exception to log
+	 * @param logger the logger to log to
+	 */
+	protected void logException(String code,
+			Locale locale,
+			Exception ex,
+			Logger logger) {
+<span class="nc bnc" id="L236" title="All 2 branches missed.">		if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L237">			StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L238">			sb.append(&quot;FAILED: resolveCode [&quot;);</span>
+<span class="nc" id="L239">			sb.append(code);</span>
+<span class="nc" id="L240">			sb.append(&quot;] for language [&quot;);</span>
+<span class="nc" id="L241">			sb.append(locale.toString());</span>
+<span class="nc" id="L242">			sb.append(&quot;] because of: &quot;);</span>
+<span class="nc" id="L243">			sb.append(ex.getClass().getName());</span>
+<span class="nc" id="L244">			sb.append(&quot;Message:&quot;);</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">			sb.append(ex.getMessage() != null ? ex.getMessage().replaceAll(&quot;\n&quot;, &quot; &quot;) : &quot;null&quot;);</span>
+<span class="nc" id="L246">			logger.info(sb.toString());</span>
+		}
+<span class="nc" id="L248">	}</span>
+
+	// CHECKSTYLE:OFF
+
+	@Required
+	public void setMessageSourceDao(MessageSourceDao messageSourceDao) {
+<span class="fc" id="L254">		this.messageSourceDao = messageSourceDao;</span>
+<span class="fc" id="L255">	}</span>
+
+	/**
+	 * Setter for fallbacks. @param fallbacks the fallbacks to set
+	 *
+	 * @param fallbacks
+	 */
+	public void setFallbacks(Map&lt;Integer, ?&gt; fallbacks) {
+<span class="fc" id="L263">		SortedMap&lt;Integer, String&gt; normalized = new TreeMap&lt;Integer, String&gt;();</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (Entry&lt;Integer, ?&gt; entry : fallbacks.entrySet()) {</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">			if (entry.getValue() instanceof Locale) {</span>
+<span class="nc" id="L266">				normalized.put(entry.getKey(), ((Locale) entry.getValue()).toString());</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">			} else if (entry.getValue() instanceof String) {</span>
+<span class="fc" id="L268">				normalized.put(entry.getKey(), (String) entry.getValue());</span>
+			}
+<span class="fc" id="L270">		}</span>
+<span class="fc" id="L271">		this.fallbacks = normalized;</span>
+<span class="fc" id="L272">	}</span>
+
+	/**
+	 * Setter for fallbackForKnownLanguages. @param fallbackForKnownLanguages the fallbackForKnownLanguages to set
+	 */
+	public void setFallbackForKnownLanguages(boolean fallbackForKnownLanguages) {
+<span class="fc" id="L278">		this.fallbackForKnownLanguages = fallbackForKnownLanguages;</span>
+<span class="fc" id="L279">	}</span>
+
+	/**
+	 * Setter for fallbackForUnknownLanguages. @param fallbackForUnknownLanguages the fallbackForUnknownLanguages to set
+	 */
+	public void setFallbackForUnknownLanguages(boolean fallbackForUnknownLanguages) {
+<span class="fc" id="L285">		this.fallbackForUnknownLanguages = fallbackForUnknownLanguages;</span>
+<span class="fc" id="L286">	}</span>
+
+	// CHECKSTYLE:ON
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

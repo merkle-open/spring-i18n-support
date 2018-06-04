@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SpringI18nSupportWebAutoConfiguration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support-starter</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.autoconfigure</a> &gt; <span class="el_source">SpringI18nSupportWebAutoConfiguration.java</span></div><h1>SpringI18nSupportWebAutoConfiguration.java</h1><pre class="source lang-java linenums">package com.namics.oss.spring.support.i18n.autoconfigure;
+
+import com.namics.oss.spring.support.i18n.web.config.I18nWebConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
+
+import javax.inject.Inject;
+
+import static org.springframework.util.StringUtils.hasText;
+
+
+/**
+ * SpringI18nSupportWebAutoConfiguration.
+ *
+ * @author rgsell, Namics AG
+ * @since 14.09.17 09:19
+ */
+@Configuration
+@ConditionalOnClass(I18nWebConfig.class)
+@EnableConfigurationProperties(SpringI18nSupportProperties.class)
+<span class="nc" id="L26">public class SpringI18nSupportWebAutoConfiguration {</span>
+
+	protected static final String defaultServletMapping = &quot;/i18n/*&quot;;
+	protected static final String defaultServletName = &quot;i18nServlet&quot;;
+
+	@Inject
+	protected SpringI18nSupportProperties springI18nSupportProperties;
+
+	@Bean
+	public ServletRegistrationBean i18nSupportServlet() {
+<span class="nc" id="L36">		AnnotationConfigWebApplicationContext applicationContext = new AnnotationConfigWebApplicationContext();</span>
+<span class="nc" id="L37">		applicationContext.register(I18nWebConfig.class);</span>
+
+<span class="nc" id="L39">		DispatcherServlet dispatcherServlet = new DispatcherServlet();</span>
+<span class="nc" id="L40">		dispatcherServlet.setApplicationContext(applicationContext);</span>
+
+<span class="nc" id="L42">		ServletRegistrationBean registrationBean = new ServletRegistrationBean(dispatcherServlet, getServletMapping());</span>
+<span class="nc" id="L43">		registrationBean.setName(getServletName());</span>
+<span class="nc" id="L44">		registrationBean.setLoadOnStartup(1);</span>
+<span class="nc" id="L45">		return registrationBean;</span>
+	}
+
+
+	protected String getServletMapping() {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (hasText(springI18nSupportProperties.getWeb().getServletMapping())) {</span>
+<span class="nc" id="L51">			return springI18nSupportProperties.getWeb().getServletMapping();</span>
+		}
+<span class="nc" id="L53">		return defaultServletMapping;</span>
+	}
+
+	protected String getServletName() {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (hasText(springI18nSupportProperties.getWeb().getServletName())) {</span>
+<span class="nc" id="L58">			return springI18nSupportProperties.getWeb().getServletName();</span>
+		}
+<span class="nc" id="L60">		return defaultServletName;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

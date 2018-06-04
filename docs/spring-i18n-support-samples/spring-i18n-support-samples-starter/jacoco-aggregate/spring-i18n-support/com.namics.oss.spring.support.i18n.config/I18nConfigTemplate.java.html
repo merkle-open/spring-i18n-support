@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>I18nConfigTemplate.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.config</a> &gt; <span class="el_source">I18nConfigTemplate.java</span></div><h1>I18nConfigTemplate.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2014 Namics AG. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.config;
+
+import com.namics.oss.spring.support.i18n.DaoMessageSource;
+import com.namics.oss.spring.support.i18n.dao.MessageSourceDao;
+import com.namics.oss.spring.support.i18n.dao.MessageSourceManagementDao;
+import com.namics.oss.spring.support.i18n.excel.ExcelReader;
+import com.namics.oss.spring.support.i18n.excel.ExcelWriter;
+import com.namics.oss.spring.support.i18n.service.MessageManagementService;
+import com.namics.oss.spring.support.i18n.service.MessageManagementServiceImpl;
+import com.namics.oss.spring.support.i18n.text.SqlScriptWriter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
+
+/**
+ * I18nConfigTemplate.
+ *
+ * @author aschaefer, Namics AG
+ * @since 18.03.14 16:58
+ */
+<span class="nc" id="L24">public class I18nConfigTemplate</span>
+{
+	@Bean
+	public AnnotationMBeanExporter annotationMBeanExporter() {
+<span class="nc" id="L28">		return new AnnotationMBeanExporter();</span>
+	}
+
+	@Bean
+	public ExcelReader excelReader()
+	{
+<span class="nc" id="L34">		return new ExcelReader();</span>
+	}
+
+	@Bean
+	public ExcelWriter excelWriter()
+	{
+<span class="nc" id="L40">		return new ExcelWriter();</span>
+	}
+
+	@Bean
+	public SqlScriptWriter sqlScriptWriter()
+	{
+<span class="nc" id="L46">		return new SqlScriptWriter();</span>
+	}
+
+	@Bean
+	public DaoMessageSource i18nMessageSource(MessageSourceDao messageSourceDao)
+	{
+<span class="nc" id="L52">		DaoMessageSource source = new DaoMessageSource();</span>
+<span class="nc" id="L53">		source.setMessageSourceDao(messageSourceDao);</span>
+<span class="nc" id="L54">		return source;</span>
+	}
+
+	@Bean
+	public MessageManagementService messageManagementService(MessageSourceManagementDao messageSourceDao)
+	{
+<span class="nc" id="L60">		MessageManagementServiceImpl service = new MessageManagementServiceImpl();</span>
+<span class="nc" id="L61">		service.setExcelReader(excelReader());</span>
+<span class="nc" id="L62">		service.setExcelWriter(excelWriter());</span>
+<span class="nc" id="L63">		service.setMessageSourceDao(messageSourceDao);</span>
+<span class="nc" id="L64">		return service;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

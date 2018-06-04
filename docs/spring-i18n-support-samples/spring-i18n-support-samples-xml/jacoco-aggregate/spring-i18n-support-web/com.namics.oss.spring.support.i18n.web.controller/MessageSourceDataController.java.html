@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MessageSourceDataController.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support-web</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.web.controller</a> &gt; <span class="el_source">MessageSourceDataController.java</span></div><h1>MessageSourceDataController.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2014 Namics AG. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.web.controller;
+
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import com.namics.oss.spring.support.i18n.service.MessageManagementService;
+import com.namics.oss.spring.support.i18n.service.ReloadService;
+import com.namics.oss.spring.support.i18n.web.MessageSourceManagementController;
+import com.namics.oss.spring.support.i18n.web.bean.MessageSourceTableBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import static org.springframework.util.Assert.notNull;
+import static org.springframework.util.StringUtils.hasText;
+
+/**
+ * MessageSourceDataController.
+ * rest api for messages
+ *
+ * @author lboesch, Namics AG
+ * @since 04.09.2014
+ */
+@RestController
+@EnableAsync
+@RequestMapping(&quot;/messages&quot;)
+public class MessageSourceDataController {
+
+	protected static final String CODE = &quot;code&quot;;
+<span class="nc" id="L49">	private static final Logger LOG = LoggerFactory.getLogger(MessageSourceManagementController.class);</span>
+	protected MessageManagementService messageManagementService;
+
+	protected ReloadService reloadService;
+
+<span class="nc" id="L54">	public MessageSourceDataController(MessageManagementService messageManagementService, ReloadService reloadService) {</span>
+<span class="nc" id="L55">		notNull(messageManagementService);</span>
+<span class="nc" id="L56">		this.messageManagementService = messageManagementService;</span>
+<span class="nc" id="L57">		this.reloadService = reloadService;</span>
+<span class="nc" id="L58">	}</span>
+
+	public MessageSourceDataController(MessageManagementService messageManagementService) {
+<span class="nc" id="L61">		this(messageManagementService, null);</span>
+<span class="nc" id="L62">	}</span>
+
+	@RequestMapping(method = RequestMethod.GET)
+	public List&lt;MessageSourceTableBean&gt; getMessages() {
+<span class="nc" id="L66">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; allMessagesGrouped = this.messageManagementService.getAllMessagesGrouped();</span>
+<span class="nc" id="L67">		List&lt;MessageSourceTableBean&gt; tables = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		for (String key : allMessagesGrouped.keySet()) {</span>
+<span class="nc" id="L69">			tables.add(new MessageSourceTableBean().name(key).messages(allMessagesGrouped.get(key)));</span>
+<span class="nc" id="L70">		}</span>
+
+<span class="nc" id="L72">		return tables;</span>
+	}
+
+	@RequestMapping(value = &quot;/{code:.*}&quot;, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity&lt;MessageResourceEntry&gt; getMessage(@PathVariable(CODE) String code) {
+<span class="nc" id="L77">		MessageResourceEntry message = this.messageManagementService.getMessage(code);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">		if (message != null) {</span>
+<span class="nc" id="L79">			return new ResponseEntity&lt;&gt;(message, HttpStatus.OK);</span>
+		}
+<span class="nc" id="L81">		return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);</span>
+	}
+
+	@RequestMapping(value = &quot;/{code:.*}&quot;, method = RequestMethod.POST)
+	public ResponseEntity putMessage(@PathVariable(CODE) String code, @ModelAttribute MessageResourceEntry
+			messageResourceEntry) {
+<span class="nc" id="L87">		Assert.hasText(messageResourceEntry.getCodeId(), &quot;message code must be set!&quot;);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		String type = hasText(messageResourceEntry.getType()) ? messageResourceEntry.getType() : null;</span>
+<span class="nc" id="L89">		boolean savedOneMessage = false;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (Map.Entry&lt;Locale, String&gt; entry : messageResourceEntry.getNameMappings().entrySet()) {</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">			if (hasText(entry.getValue())) {</span>
+<span class="nc" id="L92">				this.messageManagementService.putMessage(messageResourceEntry.getCodeId(), entry.getKey(), entry.getValue(), type);</span>
+<span class="nc" id="L93">				savedOneMessage = true;</span>
+			}
+<span class="nc" id="L95">		}</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">		if (!savedOneMessage) {</span>
+<span class="nc" id="L97">			return new ResponseEntity&lt;&gt;(&quot;At least one message needs text. Nothing saved.&quot;, HttpStatus.BAD_REQUEST);</span>
+		}
+		//delete entries if one message is sent by client
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		for (Map.Entry&lt;Locale, String&gt; entry : messageResourceEntry.getNameMappings().entrySet()) {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">			if (!hasText(entry.getValue())) {</span>
+<span class="nc" id="L102">				this.messageManagementService.deleteMessageForLanguage(messageResourceEntry.getCodeId(), entry.getKey());</span>
+			}
+<span class="nc" id="L104">		}</span>
+<span class="nc" id="L105">		return new ResponseEntity&lt;&gt;(this.messageManagementService.getMessage(code), HttpStatus.OK);</span>
+	}
+
+	@RequestMapping(value = &quot;/locales&quot;, method = RequestMethod.GET)
+	public List&lt;Locale&gt; getAvailableLocales() {
+<span class="nc" id="L110">		return this.messageManagementService.getAvailableLanguages();</span>
+	}
+
+	@RequestMapping(value = &quot;/{code:.*}&quot;, method = RequestMethod.DELETE)
+	public ResponseEntity deleteByCode(@PathVariable(CODE) String code) {
+		try {
+<span class="nc" id="L116">			this.messageManagementService.deleteMessage(code);</span>
+<span class="nc" id="L117">			return new ResponseEntity(HttpStatus.OK);</span>
+<span class="nc" id="L118">		} catch (I18nException exception) {</span>
+<span class="nc" id="L119">			LOG.info(&quot;Exception during deletion of message with code {}&quot;, code, exception);</span>
+		}
+<span class="nc" id="L121">		return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);</span>
+	}
+
+	@RequestMapping(value = &quot;/reload&quot;, method = RequestMethod.POST)
+	public ResponseEntity reload() {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (this.reloadService != null) {</span>
+			try {
+<span class="nc" id="L128">				this.reloadService.reload();</span>
+<span class="nc" id="L129">				return new ResponseEntity(HttpStatus.OK);</span>
+<span class="nc" id="L130">			} catch (Exception e) {</span>
+<span class="nc" id="L131">				LOG.error(&quot;Exception during reloading of message sources&quot; + e);</span>
+<span class="nc" id="L132">				return new ResponseEntity&lt;&gt;(&quot;Unknown error: &quot; + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);</span>
+			}
+		}
+<span class="nc" id="L135">		return new ResponseEntity&lt;&gt;(&quot;No reload service is defined&quot;, HttpStatus.INTERNAL_SERVER_ERROR);</span>
+	}
+
+	@RequestMapping(&quot;/download/messages-{time}.{type}&quot;)
+	public void export(@PathVariable(&quot;time&quot;) String timestamp, @PathVariable(&quot;type&quot;) String type, HttpServletResponse response) {
+		try {
+<span class="nc" id="L141">			response.setHeader(&quot;Pragma&quot;, &quot;public&quot;);</span>
+<span class="nc" id="L142">			response.setHeader(&quot;Cache-Control&quot;, &quot;private&quot;);</span>
+<span class="nc bnc" id="L143" title="All 4 branches missed.">			if (type != null &amp;&amp; &quot;xls&quot;.equals(type)) {</span>
+<span class="nc" id="L144">				response.setContentType(&quot;application/vnd.ms-excel&quot;);</span>
+<span class="nc" id="L145">				this.messageManagementService.exportToExcel97(response.getOutputStream());</span>
+<span class="nc bnc" id="L146" title="All 4 branches missed.">			} else if (type != null &amp;&amp; &quot;xlsx&quot;.equals(type)) {</span>
+<span class="nc" id="L147">				response.setContentType(&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;);</span>
+<span class="nc" id="L148">				this.messageManagementService.exportToExcel2007(response.getOutputStream());</span>
+<span class="nc bnc" id="L149" title="All 4 branches missed.">			} else if (type != null &amp;&amp; &quot;sql&quot;.equals(type)) {</span>
+<span class="nc" id="L150">				response.setContentType(&quot;text/plain&quot;);</span>
+<span class="nc" id="L151">				this.messageManagementService.exportToText(response.getOutputStream());</span>
+			}
+<span class="nc" id="L153">		} catch (IOException e) {</span>
+<span class="nc" id="L154">			LOG.error(&quot;IO exception occured &quot; + e);</span>
+<span class="nc" id="L155">			LOG.info(&quot;IO exception occured &quot;, e);</span>
+//			return this.exportErrorView;
+<span class="nc" id="L157">		}</span>
+<span class="nc" id="L158">	}</span>
+
+	@RequestMapping(value = &quot;/uploadFile&quot;, method = RequestMethod.POST)
+	public ResponseEntity uploadFile(@RequestParam(&quot;file&quot;) MultipartFile file, UriComponentsBuilder builder) throws IOException {
+<span class="nc" id="L162">		InputStream input = file.getInputStream();</span>
+<span class="nc" id="L163">		this.messageManagementService.importFromExcel(input);</span>
+<span class="nc" id="L164">		HttpHeaders headers = new HttpHeaders();</span>
+<span class="nc" id="L165">		headers.setLocation(builder.path(&quot;/upload.html&quot;).build().toUri());</span>
+<span class="nc" id="L166">		return new ResponseEntity&lt;&gt;(&quot;/admin/&quot;, headers, HttpStatus.OK);</span>
+	}
+
+
+	@ExceptionHandler(value = IllegalArgumentException.class)
+	public ResponseEntity notValidMessage(IllegalArgumentException exception) {
+<span class="nc" id="L172">		return new ResponseEntity(exception.getMessage(), HttpStatus.BAD_REQUEST);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

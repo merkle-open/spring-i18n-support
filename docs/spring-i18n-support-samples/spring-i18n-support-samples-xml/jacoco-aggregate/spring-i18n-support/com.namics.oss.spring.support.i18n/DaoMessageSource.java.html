@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DaoMessageSource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n</a> &gt; <span class="el_source">DaoMessageSource.java</span></div><h1>DaoMessageSource.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n;
+
+import com.namics.oss.spring.support.i18n.context.support.Reloadable;
+import com.namics.oss.spring.support.i18n.exception.ReloadableResourceException;
+import com.namics.oss.spring.support.i18n.legacy.CachingMapDecorator;
+import com.namics.oss.spring.support.i18n.model.MessageCacheKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
+
+import java.text.MessageFormat;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * MessageSource that resolves the messages from a configurable DAO Object using {@link CachingMapDecorator} maps for caching. This is the most
+ * recommend implementation to use if you do not need precise cache configuration or realtime label updates. This caching reduces load on the dao
+ * tremendously.
+ *
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Oct 14, 2010
+ */
+<span class="fc" id="L27">public final class DaoMessageSource extends AbstractDaoMessageSource implements Reloadable</span>
+{
+	/**
+	 * Logger-Category.
+	 */
+<span class="fc" id="L32">	private static final Logger LOG = LoggerFactory.getLogger(DaoMessageSource.class);</span>
+
+	/**
+	 * Map for caching message formats.
+	 */
+<span class="fc" id="L37">	private Map&lt;MessageCacheKey, MessageFormat&gt; cachedMessageFormats = new FormatCachingMapDecorator();</span>
+
+	/**
+	 * Map for caching message formats.
+	 */
+<span class="fc" id="L42">	private Map&lt;MessageCacheKey, String&gt; cachedMessages = new MessageCachingMapDecorator();</span>
+
+	@Override
+	public void reload() throws ReloadableResourceException
+	{
+		try
+		{
+<span class="fc" id="L49">			this.cachedMessageFormats.clear();</span>
+<span class="fc" id="L50">			this.cachedMessages.clear();</span>
+<span class="nc" id="L51">		} catch (Exception ex)</span>
+		{
+<span class="nc" id="L53">			throw new ReloadableResourceException(ex.getMessage(), ex, DaoMessageSource.class.getName());</span>
+<span class="fc" id="L54">		}</span>
+<span class="fc" id="L55">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected MessageFormat resolveCode(String code,
+										Locale locale)
+	{
+		try
+		{
+<span class="fc" id="L66">			return this.cachedMessageFormats.get(new MessageCacheKey(locale, code));</span>
+<span class="nc" id="L67">		} catch (Exception ex)</span>
+		{
+<span class="nc" id="L69">			this.logException(code, locale, ex, LOG);</span>
+<span class="nc" id="L70">			return null;</span>
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see org.springframework.context.support.AbstractMessageSource#resolveCodeWithoutArguments(java.lang.String, java.util.Locale)
+	 */
+	@Override
+	protected String resolveCodeWithoutArguments(String code,
+												 Locale locale)
+	{
+<span class="fc" id="L83">		return this.cachedMessages.get(new MessageCacheKey(locale, code));</span>
+	}
+
+	/**
+	 * CachingMapDecorator that handles the caching of message sources.
+	 *
+	 * @author aschaefer, namics ag
+	 * @since Namics commons i18n 1.0 - Nov 12, 2010
+	 */
+<span class="fc" id="L92">	private class MessageCachingMapDecorator extends CachingMapDecorator&lt;MessageCacheKey, String&gt;</span>
+	{
+
+		/**
+		 * serialVersionUID.
+		 */
+		private static final long serialVersionUID = 1523418181467939071L;
+
+		/**
+		 * Method to create cached object if provided key is not in the cache yet.
+		 *
+		 * @param langCacheKey the language dependent cache key
+		 * @return depending on the provided object
+		 */
+		@Override
+		public String create(MessageCacheKey langCacheKey)
+		{
+<span class="fc" id="L109">			return DaoMessageSource.this.getMessageForLocale(langCacheKey.getCode(), langCacheKey.getLocale());</span>
+		}
+	}
+
+<span class="fc" id="L113">	private class FormatCachingMapDecorator extends CachingMapDecorator&lt;MessageCacheKey, MessageFormat&gt;</span>
+	{
+		/**
+		 * serialVersionUID.
+		 */
+		private static final long serialVersionUID = -5856315166060953113L;
+
+		/**
+		 * Method to create cached object if provided key is not in the cache yet.
+		 *
+		 * @param langCacheKey the language dependent cache key
+		 * @return depending on the provided object
+		 */
+		@Override
+		public MessageFormat create(MessageCacheKey langCacheKey)
+		{
+<span class="fc" id="L129">			String msg = DaoMessageSource.this.cachedMessages.get(langCacheKey);</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">			if (StringUtils.hasText(msg))</span>
+			{
+<span class="fc" id="L132">				return DaoMessageSource.this.createMessageFormat(msg, langCacheKey.getLocale());</span>
+			}
+<span class="nc" id="L134">			return null;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

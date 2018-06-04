@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MessageManagementServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.service</a> &gt; <span class="el_source">MessageManagementServiceImpl.java</span></div><h1>MessageManagementServiceImpl.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.service;
+
+import com.namics.oss.spring.support.i18n.dao.MessageSourceManagementDao;
+import com.namics.oss.spring.support.i18n.dao.jpa.model.MessageResource;
+import com.namics.oss.spring.support.i18n.excel.Excel;
+import com.namics.oss.spring.support.i18n.excel.ExcelReader;
+import com.namics.oss.spring.support.i18n.excel.ExcelWriter;
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import com.namics.oss.spring.support.i18n.text.TextWriter;
+import com.namics.oss.spring.support.i18n.util.LocaleComparator;
+import com.namics.oss.spring.support.i18n.util.MessageResourceEntryComparator;
+import org.apache.commons.lang.LocaleUtils;
+import org.springframework.util.Assert;
+
+import javax.annotation.PostConstruct;
+import javax.management.MXBean;
+import java.io.BufferedOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
+import java.util.Map.Entry;
+
+/**
+ * MessageManagementServiceImpl.
+ *
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Oct 19, 2010
+ */
+@MXBean
+<span class="fc" id="L35">public class MessageManagementServiceImpl implements MessageManagementService {</span>
+
+	private MessageSourceManagementDao messageSourceDao;
+
+<span class="fc" id="L39">	private Comparator&lt;MessageResourceEntry&gt; messageResourceEntryComparator = new MessageResourceEntryComparator();</span>
+
+<span class="fc" id="L41">	private Comparator&lt;Locale&gt; localeComparator = new LocaleComparator();</span>
+
+	private ExcelWriter excelWriter;
+
+	private ExcelReader excelReader;
+
+	private TextWriter textWriter;
+
+	@PostConstruct
+	public void init() {
+<span class="fc" id="L51">		Assert.notNull(this.messageSourceDao, &quot;messageSourceDao must be configured!&quot;);</span>
+<span class="fc" id="L52">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#getMessage(java.lang.String, java.util.Locale)
+	 */
+	@Override
+	public String getMessage(String codeId,
+	                         Locale locale) throws I18nException {
+<span class="fc" id="L62">		List&lt;MessageResource&gt; messages = this.messageSourceDao.findByCodeAndLang(codeId, locale.toString());</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		if (messages != null &amp;&amp; messages.size() &gt; 0) {</span>
+<span class="fc" id="L64">			return messages.get(0).getMessage();</span>
+		}
+<span class="fc" id="L66">		return null;</span>
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#getAllMessages()
+	 */
+	@Override
+	public List&lt;MessageResourceEntry&gt; getAllMessages() throws I18nException {
+<span class="fc" id="L76">		List&lt;MessageResourceEntry&gt; result = convertMessageMapToResourceEntries(this.messageSourceDao.findAll());</span>
+<span class="fc" id="L77">		Collections.sort(result, this.messageResourceEntryComparator);</span>
+<span class="fc" id="L78">		return result;</span>
+
+
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#getAllMessagesGrouped()
+	 */
+	@Override
+	public Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; getAllMessagesGrouped() throws I18nException {
+<span class="fc" id="L90">		List&lt;MessageResourceEntry&gt; data = getAllMessages();</span>
+<span class="fc" id="L91">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; result = new HashMap&lt;&gt;(data.size());</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		for (MessageResourceEntry entry : data) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">			String type = entry.getType() != null ? entry.getType() : &quot;DEFAULT&quot;;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (!result.containsKey(type)) {</span>
+<span class="fc" id="L95">				result.put(type, new ArrayList&lt;MessageResourceEntry&gt;());</span>
+			}
+<span class="fc" id="L97">			result.get(type).add(entry);</span>
+<span class="fc" id="L98">		}</span>
+<span class="fc" id="L99">		return result;</span>
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#getMessage(java.lang.String)
+	 */
+	@Override
+	public MessageResourceEntry getMessage(String codeId) throws I18nException {
+<span class="fc" id="L109">		List&lt;MessageResourceEntry&gt; messages = getAllMessages();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		for (MessageResourceEntry entry : messages) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			if (entry.getCodeId().equals(codeId)) {</span>
+<span class="fc" id="L112">				return entry;</span>
+			}
+<span class="fc" id="L114">		}</span>
+<span class="fc" id="L115">		return null;</span>
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#putMessage(java.lang.String, java.util.Locale,
+	 * java.lang.String)
+	 */
+	@Override
+	public void putMessage(String codeId,
+	                       Locale locale,
+	                       String message,
+	                       String type) throws I18nException {
+<span class="fc" id="L129">		Assert.hasLength(codeId);</span>
+<span class="fc" id="L130">		Assert.notNull(locale);</span>
+<span class="fc" id="L131">		LocaleUtils.toLocale(locale.toString()); // this validates the locale</span>
+<span class="fc" id="L132">		Assert.hasLength(message);</span>
+<span class="fc" id="L133">		MessageResource persisted = this.messageSourceDao.findTopByCodeAndLang(codeId, locale.toString());</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (persisted != null) {</span>
+			//update case
+<span class="fc" id="L136">			persisted.message(message).type(type);</span>
+		} else {
+			//insert case
+<span class="fc" id="L139">			persisted = new MessageResource()</span>
+<span class="fc" id="L140">					.code(codeId)</span>
+<span class="fc" id="L141">					.lang(locale.toString())</span>
+<span class="fc" id="L142">					.message(message)</span>
+<span class="fc" id="L143">					.type(type);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">			persisted.id((type == null ? &quot;&quot; : type) + codeId + locale.toString());</span>
+		}
+<span class="fc" id="L146">		this.messageSourceDao.save(persisted);</span>
+<span class="fc" id="L147">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#putMessage(java.lang.String, java.util.Locale,
+	 * java.lang.String)
+	 */
+	@Override
+	public void putMessage(String codeId,
+	                       Locale locale,
+	                       String message) throws I18nException {
+<span class="fc" id="L159">		putMessage(codeId, locale, message, null);</span>
+<span class="fc" id="L160">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#exportToExcel2007(java.io.OutputStream)
+	 */
+	@Override
+	public void exportToExcel2007(OutputStream output) throws I18nException {
+<span class="fc" id="L169">		Assert.notNull(output);</span>
+<span class="fc" id="L170">		Assert.notNull(this.excelWriter, &quot;you have to configure an excelWriter to use this operation.&quot;);</span>
+<span class="fc" id="L171">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; exportable = getAllMessagesGrouped();</span>
+<span class="fc" id="L172">		this.excelWriter.createExcel(exportable, output, Excel.FORMAT_EXCEL_2007);</span>
+<span class="fc" id="L173">	}</span>
+
+	/**
+	 * Be careful: Do not use a BufferedOutputStream for this implementation. {@inheritDoc}
+	 *
+	 * @see MessageManagementService#exportToExcel97(java.io.OutputStream)
+	 */
+	@Override
+	public void exportToExcel97(OutputStream output) throws I18nException {
+<span class="fc" id="L182">		Assert.notNull(output);</span>
+<span class="fc" id="L183">		Assert.notNull(this.excelWriter, &quot;you have to configure an excelWriter to use this operation.&quot;);</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		Assert.isTrue(!(output instanceof BufferedOutputStream));</span>
+<span class="fc" id="L185">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; exportable = getAllMessagesGrouped();</span>
+<span class="fc" id="L186">		this.excelWriter.createExcel(exportable, output, Excel.FORMAT_EXCEL_97);</span>
+<span class="fc" id="L187">	}</span>
+
+	@Override
+	public void exportToText(OutputStream output) throws I18nException {
+<span class="fc" id="L191">		Assert.notNull(output);</span>
+<span class="fc" id="L192">		Assert.notNull(this.textWriter, &quot;you have to configure a textWriter to use this operation.&quot;);</span>
+<span class="fc" id="L193">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; exportable = getAllMessagesGrouped();</span>
+<span class="fc" id="L194">		this.textWriter.createOutput(exportable, output);</span>
+<span class="fc" id="L195">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#importFromExcel(java.io.InputStream)
+	 */
+	@Override
+	public void importFromExcel(InputStream input) throws I18nException {
+<span class="fc" id="L204">		Assert.notNull(input);</span>
+<span class="fc" id="L205">		Assert.notNull(this.excelReader, &quot;you have to configure an excelReader to use this operation.&quot;);</span>
+<span class="fc" id="L206">		List&lt;MessageResourceEntry&gt; data = this.excelReader.processExcel(input);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		for (MessageResourceEntry entry : data) {</span>
+<span class="fc" id="L208">			String codeId = entry.getCodeId();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">			for (Entry&lt;Locale, String&gt; langVal : entry.getNameMappings().entrySet()) {</span>
+<span class="fc" id="L210">				putMessage(codeId, langVal.getKey(), langVal.getValue(), entry.getType());</span>
+<span class="fc" id="L211">			}</span>
+<span class="fc" id="L212">		}</span>
+<span class="fc" id="L213">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#getAvailableLanguages()
+	 */
+	@Override
+	public List&lt;Locale&gt; getAvailableLanguages() throws I18nException {
+<span class="fc" id="L222">		List&lt;Locale&gt; locales = convertStringLangsToLocale(this.messageSourceDao.findDistinctLang());</span>
+<span class="fc" id="L223">		Collections.sort(locales, this.localeComparator);</span>
+<span class="fc" id="L224">		return locales;</span>
+
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#deleteMessage(java.lang.String)
+	 */
+	@Override
+	public void deleteMessage(String codeId) throws I18nException {
+<span class="fc" id="L235">		Long rowsAffected = this.messageSourceDao.deleteByCode(codeId);</span>
+<span class="pc bpc" id="L236" title="2 of 4 branches missed.">		if (rowsAffected == null || rowsAffected &lt; 1) {</span>
+<span class="nc" id="L237">			throw new I18nException(&quot;no message deleted with this code&quot;);</span>
+		}
+<span class="fc" id="L239">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see MessageManagementService#deleteMessage(java.lang.String)
+	 */
+	@Override
+	public void deleteMessageForLanguage(String codeId, Locale locale) throws I18nException {
+<span class="nc" id="L248">		Long rowsAffected = this.messageSourceDao.deleteByCodeAndLang(codeId, locale.toString());</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">		if (rowsAffected == null || rowsAffected &lt; 0) {</span>
+<span class="nc" id="L250">			throw new I18nException(&quot;error on deleting message with code &quot; + codeId);</span>
+		}
+<span class="nc" id="L252">	}</span>
+
+	private List&lt;Locale&gt; convertStringLangsToLocale(List&lt;String&gt; languages) {
+<span class="fc" id="L255">		List&lt;Locale&gt; locales = new ArrayList&lt;&gt;(languages.size());</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">		for (String lang : languages) {</span>
+<span class="fc" id="L257">			locales.add(LocaleUtils.toLocale(lang));</span>
+<span class="fc" id="L258">		}</span>
+<span class="fc" id="L259">		return locales;</span>
+	}
+
+	private List&lt;MessageResourceEntry&gt; convertMessageMapToResourceEntries(List&lt;MessageResource&gt; input) {
+<span class="fc" id="L263">		Map&lt;String, MessageResourceEntry&gt; entries = new HashMap&lt;&gt;(input.size());</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (MessageResource entry : input) {</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">			if (entries.containsKey(entry.getCode())) {</span>
+<span class="fc" id="L266">				entries.get(entry.getCode()).addLang(LocaleUtils.toLocale(entry.getLang()), entry.getMessage());</span>
+			} else {
+<span class="fc" id="L268">				MessageResourceEntry data = new MessageResourceEntry();</span>
+<span class="fc" id="L269">				data.setCodeId(entry.getCode());</span>
+<span class="fc" id="L270">				data.addLang(LocaleUtils.toLocale(entry.getLang()), entry.getMessage());</span>
+<span class="fc" id="L271">				data.setType(entry.getType());</span>
+<span class="fc" id="L272">				entries.put(entry.getCode(), data);</span>
+			}
+<span class="fc" id="L274">		}</span>
+<span class="fc" id="L275">		List&lt;MessageResourceEntry&gt; result = new ArrayList&lt;&gt;(entries.size());</span>
+<span class="fc" id="L276">		result.addAll(entries.values());</span>
+<span class="fc" id="L277">		return result;</span>
+	}
+
+	// CHECKSTYLE:OFF
+
+	/**
+	 * Setter for messageSourceDao. @param messageSourceDao the messageSourceDao to set
+	 */
+	public void setMessageSourceDao(MessageSourceManagementDao messageSourceDao) {
+<span class="fc" id="L286">		this.messageSourceDao = messageSourceDao;</span>
+<span class="fc" id="L287">	}</span>
+
+	/**
+	 * Setter for excelWriter. @param excelWriter the excelWriter to set
+	 */
+	public void setExcelWriter(ExcelWriter excelWriter) {
+<span class="fc" id="L293">		this.excelWriter = excelWriter;</span>
+<span class="fc" id="L294">	}</span>
+
+	/**
+	 * Setter for excelReader. @param excelReader the excelReader to set
+	 */
+	public void setExcelReader(ExcelReader excelReader) {
+<span class="fc" id="L300">		this.excelReader = excelReader;</span>
+<span class="fc" id="L301">	}</span>
+
+	/**
+	 * Setter for messageResourceEntryComparator. @param messageResourceEntryComparator the
+	 * messageResourceEntryComparator to set
+	 */
+	public void setMessageResourceEntryComparator(Comparator&lt;MessageResourceEntry&gt; messageResourceEntryComparator) {
+<span class="nc" id="L308">		this.messageResourceEntryComparator = messageResourceEntryComparator;</span>
+<span class="nc" id="L309">	}</span>
+
+	/**
+	 * Setter for localeComparator. @param localeComparator the localeComparator to set
+	 */
+	public void setLocaleComparator(Comparator&lt;Locale&gt; localeComparator) {
+<span class="nc" id="L315">		this.localeComparator = localeComparator;</span>
+<span class="nc" id="L316">	}</span>
+
+	/**
+	 * Setter for textWriter. @param textWriter the textWriter to set
+	 */
+	public void setTextWriter(TextWriter textWriter) {
+<span class="fc" id="L322">		this.textWriter = textWriter;</span>
+<span class="fc" id="L323">	}</span>
+
+	// CHECKSTYLE:ON
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

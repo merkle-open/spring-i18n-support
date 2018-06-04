@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SqlScriptWriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-web</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.text</a> &gt; <span class="el_source">SqlScriptWriter.java</span></div><h1>SqlScriptWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2011 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.text;
+
+import com.namics.oss.spring.support.i18n.dao.SimpleJdbcMessageSourceDao;
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+
+/**
+ * {@link TextWriter} implementation to write preconfigured SQL scripts.
+ * Usually the configuration is analog to {@link SimpleJdbcMessageSourceDao}
+ *
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.3 - Oct 18, 2010
+ */
+<span class="fc" id="L39">public class SqlScriptWriter implements TextWriter {</span>
+
+	/**
+	 * LOG.
+	 */
+<span class="fc" id="L44">	private static final Logger LOG = LoggerFactory.getLogger(SqlScriptWriter.class);</span>
+
+	/**
+	 * Template to use for script generation.
+	 * To use a custom template you can create a plain text file.
+	 * This file must contain a placeholder &lt;code&gt;##BODY##&lt;/code&gt; to define
+	 * where the body should be placed.
+	 * There is a default template provided with this artifact that can be resolved
+	 * by a class loader: &lt;code&gt;classpath:templates/template.sql&lt;/code&gt; If you have annotation processing enabled for
+	 * this package, this template will be
+	 * autowired.
+	 */
+	@Value(&quot;${classpath*:/templates/template.sql}&quot;)
+	protected Resource scriptTemplate;
+
+	/**
+	 * Template to use for script generation.
+	 * To use a custom template you can create a plain text file.
+	 * This file must contain a placeholder &lt;code&gt;##BODY##&lt;/code&gt; to define
+	 * where the body should be placed.
+	 */
+	protected String scriptTemplateContent;
+
+	/**
+	 * String to create an INSERT statement to insert a single message in a specific language.
+	 * During script generation process the following placeholders are resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible statement the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;parameter for the message is named &lt;code&gt;:message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the codeId is named &lt;code&gt;:codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the langId is named &lt;code&gt;:langid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the type is named &lt;code&gt;:type&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;INSERT INTO ##TABLE## (##CODEID##, ##LANGID## ,##MESSAGE##) VALUES (:codeid,:langid,:message,:type)&lt;/code&gt;
+	 */
+<span class="fc" id="L85">	protected String insertStatementTemplate = &quot;INSERT INTO ##TABLE## (##CODEID##, ##LANGID##, ##MESSAGE##, ##TYPE##) VALUES (:codeid, :langid, :message, :type);&quot;;</span>
+
+	/**
+	 * The placeholder used in template to place the content.
+	 */
+<span class="fc" id="L90">	protected String bodyPlaceholder = &quot;##BODY##&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##TABLE##&lt;/code&gt;.
+	 */
+<span class="fc" id="L95">	protected String table = &quot;MESSAGES&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##CODEID##&lt;/code&gt;.
+	 */
+<span class="fc" id="L100">	protected String codeId = &quot;CODEID&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##LANGID##&lt;/code&gt;.
+	 */
+<span class="fc" id="L105">	protected String langId = &quot;LANGID&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##MESSAGE##&lt;/code&gt;.
+	 */
+<span class="fc" id="L110">	protected String message = &quot;MESSAGE&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##TYPE##&lt;/code&gt;.
+	 */
+<span class="fc" id="L115">	protected String type = &quot;TYPE&quot;;</span>
+
+	/**
+	 * Character to use for line breaks - current system property &lt;code&gt;line.separator&lt;/code&gt; is default .
+	 */
+<span class="fc" id="L120">	protected String lineBreak = System.getProperty(&quot;line.separator&quot;, &quot;\n&quot;);</span>
+
+	/**
+	 * With this map further placeholders can be configured to be replaced in the Templates.
+	 * This might be useful when you have more complex structures in the database.&lt;br/&gt;
+	 * Using this mechanism you can configure specific setups like environment dependency.
+	 * Be careful with placeholders and make sure that they are unique and recognizable.
+	 * You can use a pattern like &lt;code&gt;##PLACEHOLDER##&lt;/code&gt;.&lt;br/&gt;
+	 * There are RESERVED placeholders that are replaced with configured values
+	 * before evaluation of this map:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;&lt;code&gt;##TABLE##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;&lt;code&gt;##MESSAGE##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;&lt;code&gt;##LANGID##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;&lt;code&gt;##CODEID##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 */
+	protected Map&lt;String, String&gt; placeholders;
+
+	/**
+	 * Encoding used to write data.
+	 */
+<span class="fc" id="L142">	protected String encoding = &quot;UTF-8&quot;;</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see TextWriter#createOutput(java.util.List, java.io.File)
+	 */
+	@Override
+	public void createOutput(List&lt;MessageResourceEntry&gt; input,
+	                         File output) throws I18nException {
+<span class="nc" id="L152">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; wrapper = new HashMap&lt;String, List&lt;MessageResourceEntry&gt;&gt;(1);</span>
+<span class="nc" id="L153">		wrapper.put(&quot;DUMMY&quot;, input);</span>
+<span class="nc" id="L154">		String script = createScript(wrapper);</span>
+		try {
+<span class="nc" id="L156">			FileUtils.writeStringToFile(output, script, encoding);</span>
+<span class="nc" id="L157">		} catch (IOException e) {</span>
+<span class="nc" id="L158">			throw new I18nException(&quot;Problem writing to output file&quot;);</span>
+<span class="nc" id="L159">		}</span>
+<span class="nc" id="L160">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see TextWriter#createOutput(java.util.List, java.io.OutputStream)
+	 */
+	@Override
+	public void createOutput(List&lt;MessageResourceEntry&gt; input,
+	                         OutputStream output) throws I18nException {
+<span class="fc" id="L170">		Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; wrapper = new HashMap&lt;String, List&lt;MessageResourceEntry&gt;&gt;(1);</span>
+<span class="fc" id="L171">		wrapper.put(&quot;DUMMY&quot;, input);</span>
+<span class="fc" id="L172">		String script = createScript(wrapper);</span>
+		try {
+<span class="fc" id="L174">			IOUtils.write(script, output, encoding);</span>
+<span class="nc" id="L175">		} catch (IOException e) {</span>
+<span class="nc" id="L176">			throw new I18nException(&quot;Problem writing to output file&quot;);</span>
+<span class="fc" id="L177">		}</span>
+<span class="fc" id="L178">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see TextWriter#createOutput(java.util.Map, java.io.File)
+	 */
+	@Override
+	public void createOutput(Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; input,
+	                         File output) throws I18nException {
+<span class="fc" id="L188">		String script = createScript(input);</span>
+		try {
+<span class="fc" id="L190">			FileUtils.writeStringToFile(output, script, encoding);</span>
+<span class="nc" id="L191">		} catch (IOException e) {</span>
+<span class="nc" id="L192">			throw new I18nException(&quot;Problem writing to output file&quot;);</span>
+<span class="fc" id="L193">		}</span>
+<span class="fc" id="L194">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see TextWriter#createOutput(java.util.Map, java.io.OutputStream)
+	 */
+	@Override
+	public void createOutput(Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; input,
+	                         OutputStream output) throws I18nException {
+<span class="fc" id="L204">		String script = createScript(input);</span>
+		try {
+<span class="fc" id="L206">			IOUtils.write(script, output, encoding);</span>
+<span class="nc" id="L207">		} catch (IOException e) {</span>
+<span class="nc" id="L208">			throw new I18nException(&quot;Problem writing to output file&quot;);</span>
+<span class="fc" id="L209">		}</span>
+<span class="fc" id="L210">	}</span>
+
+	private String createScript(Map&lt;String, List&lt;MessageResourceEntry&gt;&gt; input) {
+<span class="fc" id="L213">		StringBuilder body = new StringBuilder();</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		for (Entry&lt;String, List&lt;MessageResourceEntry&gt;&gt; entry : input.entrySet()) {</span>
+<span class="fc" id="L215">			body</span>
+<span class="fc" id="L216">					.append(this.lineBreak)</span>
+<span class="fc" id="L217">					.append(&quot;-- ------------------------&quot;)</span>
+<span class="fc" id="L218">					.append(this.lineBreak)</span>
+<span class="fc" id="L219">					.append(&quot;-- &quot;)</span>
+<span class="fc" id="L220">					.append(entry.getKey())</span>
+<span class="fc" id="L221">					.append(this.lineBreak)</span>
+<span class="fc" id="L222">					.append(&quot;-- ------------------------&quot;)</span>
+<span class="fc" id="L223">					.append(this.lineBreak)</span>
+<span class="fc" id="L224">					.append(this.lineBreak);</span>
+
+<span class="fc" id="L226">			List&lt;MessageResourceEntry&gt; entires = entry.getValue();</span>
+<span class="fc" id="L227">			Collections.sort(entires, new Comparator&lt;MessageResourceEntry&gt;() {</span>
+				@Override
+				public int compare(MessageResourceEntry o1, MessageResourceEntry o2) {
+<span class="fc" id="L230">					return o1.getCodeId().compareToIgnoreCase(o2.getCodeId());</span>
+				}
+			});
+
+<span class="fc bfc" id="L234" title="All 2 branches covered.">			for (MessageResourceEntry msgEntry : entires) {</span>
+<span class="fc" id="L235">				createEntryLines(msgEntry, body);</span>
+<span class="fc" id="L236">			}</span>
+<span class="fc" id="L237">		}</span>
+		try {
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">			if (!StringUtils.hasText(scriptTemplateContent)) {</span>
+<span class="fc" id="L240">				scriptTemplateContent = IOUtils.toString(this.scriptTemplate.getInputStream());</span>
+			}
+<span class="fc" id="L242">			String script = scriptTemplateContent;</span>
+<span class="fc" id="L243">			script = replacePlaceholders(script);</span>
+<span class="fc" id="L244">			String bodyText = body.toString().replaceAll(&quot;\\$&quot;, &quot;#dollar#&quot;);</span>
+<span class="fc" id="L245">			script = script.replaceAll(this.bodyPlaceholder, bodyText);</span>
+<span class="fc" id="L246">			script = script.replaceAll(&quot;##DATE##&quot;, SimpleDateFormat.getDateTimeInstance().format(new Date()));</span>
+<span class="fc" id="L247">			script = script.replaceAll(&quot;#dollar#&quot;, &quot;\\$&quot;);</span>
+<span class="fc" id="L248">			script = script.replaceAll(&quot;##ENCODING##&quot;, encoding);</span>
+<span class="fc" id="L249">			return script;</span>
+<span class="nc" id="L250">		} catch (IOException e) {</span>
+<span class="nc" id="L251">			throw new I18nException(&quot;Problem with script creation template &quot; + scriptTemplate, e);</span>
+		}
+	}
+
+	/**
+	 * Creates the text lines for the values of the entry.
+	 *
+	 * @param entry the data to be filled in that line.
+	 * @param sb    string builder to append lines for this entry
+	 */
+	private void createEntryLines(MessageResourceEntry entry,
+	                              StringBuilder sb) {
+<span class="fc bfc" id="L263" title="All 2 branches covered.">		for (Entry&lt;Locale, String&gt; message : entry.getNameMappings().entrySet()) {</span>
+			// :codeid,:langid,:message,:type
+<span class="fc" id="L265">			String line = this.insertStatementTemplate;</span>
+<span class="fc" id="L266">			line = replacePlaceholders(line);</span>
+<span class="fc" id="L267">			line = line.replaceAll(&quot;:codeid&quot;, &quot;'&quot; + entry.getCodeId().replaceAll(&quot;\\$&quot;, &quot;#dollar#&quot;) + &quot;'&quot;);</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">			line = line.replaceAll(&quot;:type&quot;, entry.getType() == null ? &quot;NULL&quot; : &quot;'&quot; + entry.getType().replaceAll(&quot;\\$&quot;, &quot;#dollar#&quot;) + &quot;'&quot;);</span>
+<span class="fc" id="L269">			line = line.replaceAll(&quot;:langid&quot;, &quot;'&quot; + message.getKey().toString().replaceAll(&quot;\\$&quot;, &quot;#dollar#&quot;) + &quot;'&quot;);</span>
+<span class="fc" id="L270">			String msg = message.getValue().replaceAll(&quot;'&quot;, &quot;''&quot;).replaceAll(&quot;\\$&quot;, &quot;#dollar#&quot;);</span>
+<span class="fc" id="L271">			line = line.replaceAll(&quot;:message&quot;, &quot;'&quot; + msg + &quot;'&quot;);</span>
+<span class="fc" id="L272">			sb.append(line).append(this.lineBreak);</span>
+<span class="fc" id="L273">		}</span>
+<span class="fc" id="L274">	}</span>
+
+	/**
+	 * Replaces the placeholders in the query template with correct configured item names.
+	 */
+	private String replacePlaceholders(String template) {
+<span class="fc" id="L280">		LOG.info(&quot;Replace placeholders &quot; + template);</span>
+<span class="fc" id="L281">		String result = template.replaceAll(&quot;##MESSAGE##&quot;, this.message);</span>
+<span class="fc" id="L282">		result = result.replaceAll(&quot;##TABLE##&quot;, this.table);</span>
+<span class="fc" id="L283">		result = result.replaceAll(&quot;##CODEID##&quot;, this.codeId);</span>
+<span class="fc" id="L284">		result = result.replaceAll(&quot;##LANGID##&quot;, this.langId);</span>
+<span class="fc" id="L285">		result = result.replaceAll(&quot;##TYPE##&quot;, this.type);</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">		if (!CollectionUtils.isEmpty(this.placeholders)) {</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">			for (Entry&lt;String, String&gt; entry : this.placeholders.entrySet()) {</span>
+<span class="nc" id="L288">				result = result.replaceAll(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L289">			}</span>
+		}
+<span class="fc" id="L291">		return result;</span>
+	}
+
+	/**
+	 * Setter for scriptTemplate. @param scriptTemplate the scriptTemplate to set
+	 */
+	public void setScriptTemplate(Resource scriptTemplate) {
+<span class="fc" id="L298">		this.scriptTemplate = scriptTemplate;</span>
+<span class="fc" id="L299">	}</span>
+
+	/**
+	 * Setter for insertStatementTemplate. @param insertStatementTemplate the insertStatementTemplate to set
+	 */
+	public void setInsertStatementTemplate(String insertStatementTemplate) {
+<span class="nc" id="L305">		this.insertStatementTemplate = insertStatementTemplate;</span>
+<span class="nc" id="L306">	}</span>
+
+	/**
+	 * Setter for bodyPlaceholder. @param bodyPlaceholder the bodyPlaceholder to set
+	 */
+	public void setBodyPlaceholder(String bodyPlaceholder) {
+<span class="nc" id="L312">		this.bodyPlaceholder = bodyPlaceholder;</span>
+<span class="nc" id="L313">	}</span>
+
+	/**
+	 * Setter for table. @param table the table to set
+	 */
+	public void setTable(String table) {
+<span class="nc" id="L319">		this.table = table;</span>
+<span class="nc" id="L320">	}</span>
+
+	/**
+	 * Setter for codeId. @param codeId the codeId to set
+	 */
+	public void setCodeId(String codeId) {
+<span class="nc" id="L326">		this.codeId = codeId;</span>
+<span class="nc" id="L327">	}</span>
+
+	/**
+	 * Setter for langId. @param langId the langId to set
+	 */
+	public void setLangId(String langId) {
+<span class="nc" id="L333">		this.langId = langId;</span>
+<span class="nc" id="L334">	}</span>
+
+	/**
+	 * Setter for message. @param message the message to set
+	 */
+	public void setMessage(String message) {
+<span class="nc" id="L340">		this.message = message;</span>
+<span class="nc" id="L341">	}</span>
+
+	/**
+	 * Setter for type. @param type the type to set
+	 */
+	public void setType(String type) {
+<span class="nc" id="L347">		this.type = type;</span>
+<span class="nc" id="L348">	}</span>
+
+	/**
+	 * Setter for lineBreak. @param lineBreak the lineBreak to set
+	 */
+	public void setLineBreak(String lineBreak) {
+<span class="nc" id="L354">		this.lineBreak = lineBreak;</span>
+<span class="nc" id="L355">	}</span>
+
+	/**
+	 * Setter for placeholders. @param placeholders the placeholders to set
+	 */
+	public void setPlaceholders(Map&lt;String, String&gt; placeholders) {
+<span class="nc" id="L361">		this.placeholders = placeholders;</span>
+<span class="nc" id="L362">	}</span>
+
+
+	public void setScriptTemplateContent(String scriptTemplateContent) {
+<span class="nc" id="L366">		this.scriptTemplateContent = scriptTemplateContent;</span>
+<span class="nc" id="L367">	}</span>
+
+
+	public SqlScriptWriter scriptTemplate(Resource scriptTemplate) {
+<span class="nc" id="L371">		setScriptTemplate(scriptTemplate);</span>
+<span class="nc" id="L372">		return this;</span>
+	}
+
+	public SqlScriptWriter scriptTemplateContent(String scriptTemplateContent) {
+<span class="nc" id="L376">		setScriptTemplateContent(scriptTemplateContent);</span>
+<span class="nc" id="L377">		return this;</span>
+	}
+
+	public SqlScriptWriter insertStatementTemplate(String insertStatementTemplate) {
+<span class="nc" id="L381">		setInsertStatementTemplate(insertStatementTemplate);</span>
+<span class="nc" id="L382">		return this;</span>
+	}
+
+	public SqlScriptWriter bodyPlaceholder(String bodyPlaceholder) {
+<span class="nc" id="L386">		setBodyPlaceholder(bodyPlaceholder);</span>
+<span class="nc" id="L387">		return this;</span>
+	}
+
+	public SqlScriptWriter table(String table) {
+<span class="nc" id="L391">		setTable(table);</span>
+<span class="nc" id="L392">		return this;</span>
+	}
+
+	public SqlScriptWriter codeId(String codeId) {
+<span class="nc" id="L396">		setCodeId(codeId);</span>
+<span class="nc" id="L397">		return this;</span>
+	}
+
+	public SqlScriptWriter langId(String langId) {
+<span class="nc" id="L401">		setLangId(langId);</span>
+<span class="nc" id="L402">		return this;</span>
+	}
+
+	public SqlScriptWriter message(String message) {
+<span class="nc" id="L406">		setMessage(message);</span>
+<span class="nc" id="L407">		return this;</span>
+	}
+
+	public SqlScriptWriter type(String type) {
+<span class="nc" id="L411">		setType(type);</span>
+<span class="nc" id="L412">		return this;</span>
+	}
+
+	public SqlScriptWriter lineBreak(String lineBreak) {
+<span class="nc" id="L416">		setLineBreak(lineBreak);</span>
+<span class="nc" id="L417">		return this;</span>
+	}
+
+	public SqlScriptWriter placeholders(Map&lt;String, String&gt; placeholders) {
+<span class="nc" id="L421">		setPlaceholders(placeholders);</span>
+<span class="nc" id="L422">		return this;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

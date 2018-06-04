@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PropertiesWriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.properties</a> &gt; <span class="el_source">PropertiesWriter.java</span></div><h1>PropertiesWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2012 Namics AG. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.properties;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import com.namics.oss.spring.support.i18n.util.LocaleComparator;
+import org.apache.commons.lang.LocaleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * PropertiesWriter.
+ * 
+ * @author aschaefer, Namics AG
+ * @since i18n 1.4 26.04.2012
+ */
+<span class="fc" id="L35">public class PropertiesWriter</span>
+{
+<span class="fc" id="L37">	private static final Logger LOG = LoggerFactory.getLogger(PropertiesWriter.class);</span>
+
+	/** Check last modified time stamp default=true. */
+<span class="fc" id="L40">	private boolean checkLastModified = true;</span>
+
+	public void writePropertiesSet(	List&lt;MessageResourceEntry&gt; entries,
+									String defaultLanguage,
+									String resourceName,
+									File outputDir,
+									String encoding)
+	{
+<span class="nc" id="L48">		this.writePropertiesSet(entries, defaultLanguage, resourceName, outputDir, encoding, 0L);</span>
+<span class="nc" id="L49">	}</span>
+
+	public void writePropertiesSet(	List&lt;MessageResourceEntry&gt; entries,
+									String defaultLanguage,
+									String resourceName,
+									File outputDir,
+									String encoding,
+									long lastModified)
+	{
+<span class="nc" id="L58">		this.writePropertiesSet(entries, LocaleUtils.toLocale(defaultLanguage), resourceName, outputDir, encoding, lastModified);</span>
+<span class="nc" id="L59">	}</span>
+
+	public void writePropertiesSet(	List&lt;MessageResourceEntry&gt; entries,
+									Locale defaultLocale,
+									String resourceName,
+									File outputDir,
+									String encoding)
+	{
+<span class="fc" id="L67">		this.writePropertiesSet(entries, defaultLocale, resourceName, outputDir, encoding, 0L);</span>
+<span class="fc" id="L68">	}</span>
+
+	public void writePropertiesSet(	List&lt;MessageResourceEntry&gt; entries,
+									Locale defaultLocale,
+									String resourceName,
+									File outputDir,
+									String encoding,
+									long lastModified)
+	{
+<span class="fc" id="L77">		LOG.info(&quot;Extract language information&quot;);</span>
+<span class="fc" id="L78">		SortedSet&lt;Locale&gt; locales = new TreeSet&lt;Locale&gt;(new LocaleComparator());</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		for (MessageResourceEntry entry : entries)</span>
+		{
+<span class="fc" id="L81">			Map&lt;Locale, String&gt; mappings = entry.getNameMappings();</span>
+<span class="pc bpc" id="L82" title="2 of 4 branches missed.">			if (mappings != null &amp;&amp; !mappings.isEmpty())</span>
+			{
+<span class="fc bfc" id="L84" title="All 2 branches covered.">				for (Locale key : mappings.keySet())</span>
+				{
+<span class="fc" id="L86">					locales.add(key);</span>
+<span class="fc" id="L87">				}</span>
+			}
+<span class="fc" id="L89">		}</span>
+<span class="fc" id="L90">		this.writePropertiesSet(entries, locales, defaultLocale, resourceName, outputDir, encoding, lastModified);</span>
+<span class="fc" id="L91">	}</span>
+
+	public void writePropertiesSet(	List&lt;MessageResourceEntry&gt; entries,
+									Set&lt;Locale&gt; locales,
+									Locale defaultLocale,
+									String resourceName,
+									File outputDir,
+									String encoding) throws I18nException
+	{
+<span class="nc" id="L100">		this.writePropertiesSet(entries, locales, defaultLocale, resourceName, outputDir, encoding, 0L);</span>
+<span class="nc" id="L101">	}</span>
+
+	public void writePropertiesSet(	List&lt;MessageResourceEntry&gt; entries,
+									Set&lt;Locale&gt; locales,
+									Locale defaultLocale,
+									String resourceName,
+									File outputDir,
+									String encoding,
+									long lastModified) throws I18nException
+	{
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		if (!outputDir.exists())</span>
+		{
+<span class="nc" id="L113">			LOG.info(&quot;create output directory  [{}]&quot;, outputDir.getName());</span>
+<span class="nc" id="L114">			outputDir.mkdirs();</span>
+		}
+
+<span class="fc" id="L117">		String fileName = resourceName + &quot;.properties&quot;;</span>
+<span class="fc" id="L118">		File master = new File(outputDir, fileName);</span>
+<span class="pc bpc" id="L119" title="4 of 6 branches missed.">		if (this.checkLastModified &amp;&amp; master.exists() &amp;&amp; master.lastModified() &gt;= lastModified)</span>
+		{
+<span class="nc" id="L121">			LOG.info(&quot;skip properties creation, files ({}) are newer then source ({})&quot;, new Date(master.lastModified()), new Date(lastModified));</span>
+<span class="nc" id="L122">			return;</span>
+		}
+<span class="fc" id="L124">		LOG.info(&quot;write master properties file {}&quot;, master.getAbsoluteFile());</span>
+<span class="fc" id="L125">		this.writeProperties(entries, defaultLocale, master, encoding);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (Locale locale : locales)</span>
+		{
+<span class="fc" id="L128">			String name = resourceName + &quot;_&quot; + locale.toString() + &quot;.properties&quot;;</span>
+<span class="fc" id="L129">			File file = new File(outputDir, name);</span>
+<span class="fc" id="L130">			LOG.info(&quot;write locale [{}] properties file {}&quot;, locale, file);</span>
+<span class="fc" id="L131">			this.writeProperties(entries, locale, file, encoding);</span>
+<span class="fc" id="L132">		}</span>
+<span class="fc" id="L133">	}</span>
+
+	public void writeProperties(List&lt;MessageResourceEntry&gt; entries,
+								Locale locale,
+								File file,
+								String encoding) throws I18nException
+	{
+		try
+		{
+<span class="fc" id="L142">			this.writeProperties(entries, locale, this.getWriter(file, encoding), encoding);</span>
+		}
+<span class="nc" id="L144">		catch (Exception e)</span>
+		{
+<span class="nc" id="L146">			throw new I18nException(e);</span>
+<span class="fc" id="L147">		}</span>
+<span class="fc" id="L148">	}</span>
+
+	public void writeProperties(List&lt;MessageResourceEntry&gt; entries,
+								Locale locale,
+								BufferedWriter writer,
+								String encoding) throws I18nException
+	{
+		try
+		{
+<span class="fc" id="L157">			writer.write(&quot;#Generated File by i18n PropertiesWriter.&quot;);</span>
+<span class="fc" id="L158">			writer.newLine();</span>
+<span class="fc" id="L159">			writer.write(&quot;#Copyright 2012 Namics AG. All rights reserved.&quot;);</span>
+<span class="fc" id="L160">			writer.newLine();</span>
+<span class="fc" id="L161">			writer.write(&quot;#Generation date: &quot; + new Date().toString());</span>
+<span class="fc" id="L162">			writer.newLine();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">			for (MessageResourceEntry entry : entries)</span>
+			{
+<span class="fc" id="L165">				String value = this.getOptimizedValue(entry, locale);</span>
+<span class="fc" id="L166">				writer.newLine();</span>
+<span class="fc" id="L167">				writer.write(entry.getCodeId());</span>
+<span class="fc" id="L168">				writer.write(&quot;=&quot;);</span>
+<span class="fc" id="L169">				writer.write(value);</span>
+<span class="fc" id="L170">			}</span>
+		}
+<span class="nc" id="L172">		catch (IOException e1)</span>
+		{
+<span class="nc" id="L174">			LOG.error(&quot;IOException occured. {}&quot;, e1);</span>
+<span class="nc" id="L175">			throw new I18nException(e1);</span>
+		}
+		finally
+		{
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (writer != null)</span>
+			{
+				try
+				{
+<span class="fc" id="L183">					writer.flush();</span>
+<span class="fc" id="L184">					writer.close();</span>
+				}
+<span class="nc" id="L186">				catch (IOException e)</span>
+				{
+<span class="nc" id="L188">					LOG.error(&quot;Could not close writer. {}&quot;, e);</span>
+<span class="fc" id="L189">				}</span>
+			}
+		}
+<span class="fc" id="L192">	}</span>
+
+	private String getOptimizedValue(	MessageResourceEntry entry,
+										Locale locale)
+	{
+<span class="fc" id="L197">		String result = &quot;&quot;;</span>
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">		if (entry != null &amp;&amp; locale != null)</span>
+		{
+<span class="fc" id="L200">			result = entry.getName(locale);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">			result = result != null ? result : &quot;&quot;;</span>
+<span class="fc" id="L202">			result = result.trim();</span>
+		}
+<span class="fc" id="L204">		return result;</span>
+	}
+
+	/**
+	 * helper method to get a file writer with configured encoding.
+	 * 
+	 * @param file
+	 *            the file to open a writer for
+	 * @param encoding
+	 *            encoding to be used
+	 * @return a Buffered writer with configured encoding.
+	 * @throws IOException
+	 *             a problem with IO.
+	 */
+	private BufferedWriter getWriter(	File file,
+										String encoding) throws IOException
+	{
+<span class="fc" id="L221">		OutputStream fout = new FileOutputStream(file);</span>
+<span class="fc" id="L222">		return this.getWriter(fout, encoding);</span>
+	}
+
+	/**
+	 * helper method to get a file writer with configured encoding.
+	 * 
+	 * @param file
+	 *            the file to open a writer for
+	 * @param encoding
+	 *            encoding to be used
+	 * @return a Buffered writer with configured encoding.
+	 * @throws IOException
+	 *             a problem with IO.
+	 */
+	private BufferedWriter getWriter(	OutputStream outputStream,
+										String encoding) throws IOException
+	{
+<span class="fc" id="L239">		OutputStream bout = this.getBufferedOutputStream(outputStream);</span>
+<span class="fc" id="L240">		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(bout, encoding));</span>
+<span class="fc" id="L241">		return writer;</span>
+	}
+
+	/**
+	 * OutputStream to be wrapped if it is possible to wrap.
+	 * 
+	 * @param stream
+	 *            Stream that needs to be buffered
+	 * @return the wrapped Stream with Buffer
+	 */
+	private BufferedOutputStream getBufferedOutputStream(OutputStream stream)
+	{
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">		if (stream instanceof BufferedOutputStream)</span>
+		{
+<span class="nc" id="L255">			return (BufferedOutputStream) stream;</span>
+		}
+<span class="fc" id="L257">		BufferedOutputStream bout = new BufferedOutputStream(stream);</span>
+<span class="fc" id="L258">		return bout;</span>
+	}
+
+	/** Getter for checkLastModified default=true. @return the checkLastModified */
+	public boolean isCheckLastModified()
+	{
+<span class="nc" id="L264">		return this.checkLastModified;</span>
+	}
+
+	/** Setter for checkLastModified default=true. @param checkLastModified the checkLastModified to set */
+	public void setCheckLastModified(boolean checkLastModified)
+	{
+<span class="nc" id="L270">		this.checkLastModified = checkLastModified;</span>
+<span class="nc" id="L271">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

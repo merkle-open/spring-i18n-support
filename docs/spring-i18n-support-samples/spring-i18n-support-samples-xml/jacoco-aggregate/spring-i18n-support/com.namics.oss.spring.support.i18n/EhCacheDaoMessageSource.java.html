@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EhCacheDaoMessageSource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n</a> &gt; <span class="el_source">EhCacheDaoMessageSource.java</span></div><h1>EhCacheDaoMessageSource.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n;
+
+import java.text.MessageFormat;
+import java.util.Locale;
+
+import com.namics.oss.spring.support.i18n.context.support.Reloadable;
+import com.namics.oss.spring.support.i18n.model.MessageCacheKey;
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.namics.oss.spring.support.i18n.exception.ReloadableResourceException;
+
+/**
+ * MessageSource that resolves the messages from a configurable DAO Object using an EhCache for caching. Be sure to have the required ehcache
+ * dependencies in your classpath if you want to use this implementation. If you cannot include ehcache, considder using DaoMesageSource.
+ * 
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.2 - Oct 14, 2010
+ */
+<span class="fc" id="L27">public class EhCacheDaoMessageSource extends AbstractDaoMessageSource implements Reloadable</span>
+{
+	/** Logger-Category. */
+<span class="fc" id="L30">	private static final Logger LOG = LoggerFactory.getLogger(EhCacheDaoMessageSource.class);</span>
+
+	private Ehcache messageCache;
+
+	private Ehcache formatCache;
+
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @see AbstractDaoMessageSource#reload()
+	 */
+	@Override
+	public void reload() throws ReloadableResourceException
+	{
+		try
+		{
+<span class="fc" id="L46">			this.messageCache.removeAll();</span>
+<span class="fc" id="L47">			this.formatCache.removeAll();</span>
+		}
+<span class="nc" id="L49">		catch (Exception ex)</span>
+		{
+<span class="nc" id="L51">			throw new ReloadableResourceException(ex.getMessage(), ex, DaoMessageSource.class.getName());</span>
+<span class="fc" id="L52">		}</span>
+<span class="fc" id="L53">	}</span>
+
+	/** {@inheritDoc} */
+	@Override
+	protected MessageFormat resolveCode(String code,
+										Locale locale)
+	{
+<span class="nc" id="L60">		MessageCacheKey cacheKey = new MessageCacheKey(locale, code);</span>
+<span class="nc" id="L61">		Element cacheElement = null;</span>
+		try
+		{
+<span class="nc" id="L64">			cacheElement = this.formatCache.get(cacheKey);</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">			if (cacheElement != null &amp;&amp; !cacheElement.isExpired())</span>
+			{
+				// ok... we got a valid response in cache
+<span class="nc" id="L68">				LOG.info(&quot;Message value with key [&quot; + cacheKey + &quot;] found in cache... &quot;);</span>
+			}
+			else
+			{
+				// not in cache get from datastore
+<span class="nc" id="L73">				cacheElement = new Element(cacheKey, this.createMessageFormat(this.getMessageForLocale(code, locale), locale));</span>
+<span class="nc" id="L74">				LOG.info(&quot;Message value with key [&quot; + cacheKey + &quot;] put into cache... &quot;);</span>
+			}
+		}
+<span class="nc" id="L77">		catch (Exception e)</span>
+		{
+<span class="nc" id="L79">			this.logException(code, locale, e, LOG);</span>
+		}
+		finally
+		{
+			// we have to put null or Object into cache to unlock the blocked
+			// read-threads!
+<span class="nc bnc" id="L85" title="All 2 branches missed.">			if (cacheElement == null)</span>
+			{
+<span class="nc" id="L87">				cacheElement = new Element(cacheKey, null);</span>
+			}
+			// put element into cache
+<span class="nc" id="L90">			this.formatCache.put(cacheElement);</span>
+		}
+<span class="nc" id="L92">		return (MessageFormat) cacheElement.getValue();</span>
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @see org.springframework.context.support.AbstractMessageSource#resolveCodeWithoutArguments(java.lang.String, java.util.Locale)
+	 */
+	@Override
+	protected String resolveCodeWithoutArguments(	String code,
+													Locale locale)
+	{
+<span class="fc" id="L104">		MessageCacheKey cacheKey = new MessageCacheKey(locale, code);</span>
+<span class="fc" id="L105">		Element cacheElement = null;</span>
+		try
+		{
+<span class="fc" id="L108">			cacheElement = this.messageCache.get(cacheKey);</span>
+<span class="pc bpc" id="L109" title="3 of 4 branches missed.">			if (cacheElement != null &amp;&amp; !cacheElement.isExpired())</span>
+			{
+				// ok... we got a valid response in cache
+<span class="nc" id="L112">				LOG.info(&quot;Message value with key [&quot; + cacheKey + &quot;] found in cache... &quot;);</span>
+			}
+			else
+			{
+				// not in cache get from datastore
+<span class="fc" id="L117">				cacheElement = new Element(cacheKey, this.getMessageForLocale(code, locale));</span>
+<span class="fc" id="L118">				LOG.info(&quot;Message value with key [&quot; + cacheKey + &quot;] put into cache... &quot;);</span>
+			}
+		}
+<span class="nc" id="L121">		catch (Exception e)</span>
+		{
+<span class="nc" id="L123">			this.logException(code, locale, e, LOG);</span>
+		}
+		finally
+		{
+			// we have to put null or Object into cache to unlock the blocked
+			// read-threads!
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">			if (cacheElement == null)</span>
+			{
+<span class="nc" id="L131">				cacheElement = new Element(cacheKey, null);</span>
+			}
+			// put element into cache
+<span class="fc" id="L134">			this.messageCache.put(cacheElement);</span>
+		}
+<span class="fc" id="L136">		return (String) cacheElement.getValue();</span>
+	}
+
+	// CHECKSTYLE:OFF
+
+	public void setMessageCache(Ehcache messageCache)
+	{
+<span class="fc" id="L143">		this.messageCache = messageCache;</span>
+<span class="fc" id="L144">	}</span>
+
+	public void setFormatCache(Ehcache formatCache)
+	{
+<span class="fc" id="L148">		this.formatCache = formatCache;</span>
+<span class="fc" id="L149">	}</span>
+
+	// CHECKSTYLE:ON
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

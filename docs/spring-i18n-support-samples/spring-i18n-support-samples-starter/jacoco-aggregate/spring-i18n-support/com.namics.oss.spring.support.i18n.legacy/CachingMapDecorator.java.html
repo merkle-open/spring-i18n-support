@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CachingMapDecorator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.legacy</a> &gt; <span class="el_source">CachingMapDecorator.java</span></div><h1>CachingMapDecorator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2002-2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.namics.oss.spring.support.i18n.legacy;
+
+import org.springframework.util.Assert;
+
+import java.io.Serializable;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
+import java.util.*;
+
+/**
+ * A simple decorator for a Map, encapsulating the workflow for caching
+ * expensive values in a target Map. Supports caching weak or strong keys.
+ * &lt;p/&gt;
+ * &lt;p&gt;This class is an abstract template. Caching Map implementations
+ * should subclass and override the {@code create(key)} method which
+ * encapsulates expensive creation of a new object.
+ *
+ * @author Keith Donald
+ * @author Juergen Hoeller
+ * @since 1.2.2
+ * @deprecated as of Spring 3.2, to be removed along with LabeledEnum support
+ */
+@Deprecated
+@SuppressWarnings(&quot;serial&quot;)
+public abstract class CachingMapDecorator&lt;K, V&gt; implements Map&lt;K, V&gt;, Serializable
+{
+
+<span class="fc" id="L44">	private static Object NULL_VALUE = new Object();</span>
+
+
+	private final Map&lt;K, Object&gt; targetMap;
+
+	private final boolean synchronize;
+
+	private final boolean weak;
+
+
+	/**
+	 * Create a CachingMapDecorator with strong keys,
+	 * using an underlying synchronized Map.
+	 */
+	public CachingMapDecorator()
+	{
+<span class="fc" id="L60">		this(false);</span>
+<span class="fc" id="L61">	}</span>
+
+	/**
+	 * Create a CachingMapDecorator,
+	 * using an underlying synchronized Map.
+	 *
+	 * @param weak whether to use weak references for keys and values
+	 */
+	public CachingMapDecorator(boolean weak)
+<span class="fc" id="L70">	{</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		Map&lt;K, Object&gt; internalMap = (weak ? new WeakHashMap&lt;K, Object&gt;() : new HashMap&lt;K, Object&gt;());</span>
+<span class="fc" id="L72">		this.targetMap = Collections.synchronizedMap(internalMap);</span>
+<span class="fc" id="L73">		this.synchronize = true;</span>
+<span class="fc" id="L74">		this.weak = weak;</span>
+<span class="fc" id="L75">	}</span>
+
+	/**
+	 * Create a CachingMapDecorator with initial size,
+	 * using an underlying synchronized Map.
+	 *
+	 * @param weak whether to use weak references for keys and values
+	 * @param size the initial cache size
+	 */
+	public CachingMapDecorator(boolean weak, int size)
+<span class="nc" id="L85">	{</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">		Map&lt;K, Object&gt; internalMap = weak ? new WeakHashMap&lt;K, Object&gt;(size) : new HashMap&lt;K, Object&gt;(size);</span>
+<span class="nc" id="L87">		this.targetMap = Collections.synchronizedMap(internalMap);</span>
+<span class="nc" id="L88">		this.synchronize = true;</span>
+<span class="nc" id="L89">		this.weak = weak;</span>
+<span class="nc" id="L90">	}</span>
+
+	/**
+	 * Create a CachingMapDecorator for the given Map.
+	 * &lt;p&gt;The passed-in Map won't get synchronized explicitly,
+	 * so make sure to pass in a properly synchronized Map, if desired.
+	 *
+	 * @param targetMap the Map to decorate
+	 */
+	public CachingMapDecorator(Map&lt;K, V&gt; targetMap)
+	{
+<span class="nc" id="L101">		this(targetMap, false, false);</span>
+<span class="nc" id="L102">	}</span>
+
+	/**
+	 * Create a CachingMapDecorator for the given Map.
+	 * &lt;p&gt;The passed-in Map won't get synchronized explicitly unless
+	 * you specify &quot;synchronize&quot; as &quot;true&quot;.
+	 *
+	 * @param targetMap   the Map to decorate
+	 * @param synchronize whether to synchronize on the given Map
+	 * @param weak        whether to use weak references for values
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public CachingMapDecorator(Map&lt;K, V&gt; targetMap, boolean synchronize, boolean weak)
+<span class="nc" id="L115">	{</span>
+<span class="nc" id="L116">		Assert.notNull(targetMap, &quot;'targetMap' must not be null&quot;);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		this.targetMap = (Map&lt;K, Object&gt;) (synchronize ? Collections.synchronizedMap(targetMap) : targetMap);</span>
+<span class="nc" id="L118">		this.synchronize = synchronize;</span>
+<span class="nc" id="L119">		this.weak = weak;</span>
+<span class="nc" id="L120">	}</span>
+
+
+	public int size()
+	{
+<span class="nc" id="L125">		return this.targetMap.size();</span>
+	}
+
+	public boolean isEmpty()
+	{
+<span class="nc" id="L130">		return this.targetMap.isEmpty();</span>
+	}
+
+	public boolean containsKey(Object key)
+	{
+<span class="nc" id="L135">		return this.targetMap.containsKey(key);</span>
+	}
+
+	public boolean containsValue(Object value)
+	{
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		Object valueToCheck = (value != null ? value : NULL_VALUE);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">		if (this.synchronize)</span>
+		{
+<span class="nc" id="L143">			synchronized (this.targetMap)</span>
+			{
+<span class="nc" id="L145">				return containsValueOrReference(valueToCheck);</span>
+			}
+		}
+		else
+		{
+<span class="nc" id="L150">			return containsValueOrReference(valueToCheck);</span>
+		}
+	}
+
+	private boolean containsValueOrReference(Object value)
+	{
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (this.targetMap.containsValue(value))</span>
+		{
+<span class="nc" id="L158">			return true;</span>
+		}
+<span class="nc bnc" id="L160" title="All 2 branches missed.">		for (Object mapVal : this.targetMap.values())</span>
+		{
+<span class="nc bnc" id="L162" title="All 4 branches missed.">			if (mapVal instanceof Reference &amp;&amp; value.equals(((Reference) mapVal).get()))</span>
+			{
+<span class="nc" id="L164">				return true;</span>
+			}
+<span class="nc" id="L166">		}</span>
+<span class="nc" id="L167">		return false;</span>
+	}
+
+	public V remove(Object key)
+	{
+<span class="nc" id="L172">		return unwrapReturnValue(this.targetMap.remove(key));</span>
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private V unwrapReturnValue(Object value)
+	{
+<span class="fc" id="L178">		Object returnValue = value;</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (returnValue instanceof Reference)</span>
+		{
+<span class="nc" id="L181">			returnValue = ((Reference) returnValue).get();</span>
+		}
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		return (returnValue == NULL_VALUE ? null : (V) returnValue);</span>
+	}
+
+	public void putAll(Map&lt;? extends K, ? extends V&gt; map)
+	{
+<span class="nc" id="L188">		this.targetMap.putAll(map);</span>
+<span class="nc" id="L189">	}</span>
+
+	public void clear()
+	{
+<span class="fc" id="L193">		this.targetMap.clear();</span>
+<span class="fc" id="L194">	}</span>
+
+	public Set&lt;K&gt; keySet()
+	{
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		if (this.synchronize)</span>
+		{
+<span class="nc" id="L200">			synchronized (this.targetMap)</span>
+			{
+<span class="nc" id="L202">				return new LinkedHashSet&lt;K&gt;(this.targetMap.keySet());</span>
+			}
+		}
+		else
+		{
+<span class="nc" id="L207">			return new LinkedHashSet&lt;K&gt;(this.targetMap.keySet());</span>
+		}
+	}
+
+	public Collection&lt;V&gt; values()
+	{
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		if (this.synchronize)</span>
+		{
+<span class="nc" id="L215">			synchronized (this.targetMap)</span>
+			{
+<span class="nc" id="L217">				return valuesCopy();</span>
+			}
+		}
+		else
+		{
+<span class="nc" id="L222">			return valuesCopy();</span>
+		}
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private Collection&lt;V&gt; valuesCopy()
+	{
+<span class="nc" id="L229">		LinkedList&lt;V&gt; values = new LinkedList&lt;V&gt;();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">		for (Iterator&lt;Object&gt; it = this.targetMap.values().iterator(); it.hasNext(); )</span>
+		{
+<span class="nc" id="L232">			Object value = it.next();</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">			if (value instanceof Reference)</span>
+			{
+<span class="nc" id="L235">				value = ((Reference) value).get();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">				if (value == null)</span>
+				{
+<span class="nc" id="L238">					it.remove();</span>
+<span class="nc" id="L239">					continue;</span>
+				}
+			}
+<span class="nc bnc" id="L242" title="All 2 branches missed.">			values.add(value == NULL_VALUE ? null : (V) value);</span>
+<span class="nc" id="L243">		}</span>
+<span class="nc" id="L244">		return values;</span>
+	}
+
+	public Set&lt;Map.Entry&lt;K, V&gt;&gt; entrySet()
+	{
+<span class="nc bnc" id="L249" title="All 2 branches missed.">		if (this.synchronize)</span>
+		{
+<span class="nc" id="L251">			synchronized (this.targetMap)</span>
+			{
+<span class="nc" id="L253">				return entryCopy();</span>
+			}
+		}
+		else
+		{
+<span class="nc" id="L258">			return entryCopy();</span>
+		}
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private Set&lt;Map.Entry&lt;K, V&gt;&gt; entryCopy()
+	{
+<span class="nc" id="L265">		Map&lt;K, V&gt; entries = new LinkedHashMap&lt;K, V&gt;();</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">		for (Iterator&lt;Entry&lt;K, Object&gt;&gt; it = this.targetMap.entrySet().iterator(); it.hasNext(); )</span>
+		{
+<span class="nc" id="L268">			Entry&lt;K, Object&gt; entry = it.next();</span>
+<span class="nc" id="L269">			Object value = entry.getValue();</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">			if (value instanceof Reference)</span>
+			{
+<span class="nc" id="L272">				value = ((Reference) value).get();</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">				if (value == null)</span>
+				{
+<span class="nc" id="L275">					it.remove();</span>
+<span class="nc" id="L276">					continue;</span>
+				}
+			}
+<span class="nc bnc" id="L279" title="All 2 branches missed.">			entries.put(entry.getKey(), value == NULL_VALUE ? null : (V) value);</span>
+<span class="nc" id="L280">		}</span>
+<span class="nc" id="L281">		return entries.entrySet();</span>
+	}
+
+
+	/**
+	 * Put an object into the cache, possibly wrapping it with a weak
+	 * reference.
+	 *
+	 * @see #useWeakValue(Object, Object)
+	 */
+	public V put(K key, V value)
+	{
+<span class="fc" id="L293">		Object newValue = value;</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">		if (value == null)</span>
+		{
+<span class="fc" id="L296">			newValue = NULL_VALUE;</span>
+		}
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		else if (useWeakValue(key, value))</span>
+		{
+<span class="nc" id="L300">			newValue = new WeakReference&lt;Object&gt;(newValue);</span>
+		}
+<span class="fc" id="L302">		return unwrapReturnValue(this.targetMap.put(key, newValue));</span>
+	}
+
+	/**
+	 * Decide whether to use a weak reference for the value of
+	 * the given key-value pair.
+	 *
+	 * @param key   the candidate key
+	 * @param value the candidate value
+	 * @return {@code true} in order to use a weak reference;
+	 * {@code false} otherwise.
+	 */
+	protected boolean useWeakValue(K key, V value)
+	{
+<span class="fc" id="L316">		return this.weak;</span>
+	}
+
+	/**
+	 * Get value for key.
+	 * Creates and caches value if it doesn't already exist in the cache.
+	 * &lt;p&gt;This implementation is &lt;i&gt;not&lt;/i&gt; synchronized: This is highly
+	 * concurrent but does not guarantee unique instances in the cache,
+	 * as multiple values for the same key could get created in parallel.
+	 * Consider overriding this method to synchronize it, if desired.
+	 *
+	 * @see #create(Object)
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public V get(Object key)
+	{
+<span class="fc" id="L332">		Object value = this.targetMap.get(key);</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		if (value instanceof Reference)</span>
+		{
+<span class="nc" id="L335">			value = ((Reference) value).get();</span>
+		}
+<span class="fc bfc" id="L337" title="All 2 branches covered.">		if (value == null)</span>
+		{
+<span class="fc" id="L339">			V newValue = create((K) key);</span>
+<span class="fc" id="L340">			put((K) key, newValue);</span>
+<span class="fc" id="L341">			return newValue;</span>
+		}
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">		return (value == NULL_VALUE ? null : (V) value);</span>
+	}
+
+	/**
+	 * Create a value to cache for the given key.
+	 * Called by {@code get} if there is no value cached already.
+	 *
+	 * @param key the cache key
+	 * @see #get(Object)
+	 */
+	protected abstract V create(K key);
+
+
+	@Override
+	public String toString()
+	{
+<span class="nc" id="L359">		return &quot;CachingMapDecorator [&quot; + getClass().getName() + &quot;]:&quot; + this.targetMap;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

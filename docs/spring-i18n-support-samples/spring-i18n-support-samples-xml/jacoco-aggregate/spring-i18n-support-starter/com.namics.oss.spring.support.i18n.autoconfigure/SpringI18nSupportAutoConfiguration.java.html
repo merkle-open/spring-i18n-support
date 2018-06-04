@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SpringI18nSupportAutoConfiguration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support-starter</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.autoconfigure</a> &gt; <span class="el_source">SpringI18nSupportAutoConfiguration.java</span></div><h1>SpringI18nSupportAutoConfiguration.java</h1><pre class="source lang-java linenums">package com.namics.oss.spring.support.i18n.autoconfigure;
+
+import com.namics.oss.spring.support.i18n.DaoMessageSource;
+import com.namics.oss.spring.support.i18n.config.I18nConfigTemplate;
+import com.namics.oss.spring.support.i18n.dao.MessageSourceDao;
+import com.namics.oss.spring.support.i18n.dao.SimpleJdbcMessageSourceDao;
+import com.namics.oss.spring.support.i18n.service.ReloadService;
+import com.namics.oss.spring.support.i18n.service.ReloadServiceImpl;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
+
+import static org.springframework.util.StringUtils.hasText;
+
+/**
+ * SpringI18nSupportAutoConfiguration.
+ *
+ * @author rgsell, Namics AG
+ * @since 13.09.17 16:21
+ */
+@Import(I18nConfigTemplate.class)
+@EnableConfigurationProperties(SpringI18nSupportProperties.class)
+<span class="nc" id="L27">public class SpringI18nSupportAutoConfiguration {</span>
+
+	@Inject
+	protected SpringI18nSupportProperties springI18nSupportProperties;
+
+	@Bean
+	public ReloadService messageSourceReloadService() {
+<span class="nc" id="L34">		return new ReloadServiceImpl();</span>
+	}
+
+	@Bean(name = &quot;messageSource&quot;)
+	public DaoMessageSource i18nMessageSource(MessageSourceDao messageSourceDao) {
+<span class="nc" id="L39">		DaoMessageSource source = new DaoMessageSource();</span>
+<span class="nc" id="L40">		source.setMessageSourceDao(messageSourceDao);</span>
+<span class="nc" id="L41">		source.setUseCodeAsDefaultMessage(true);</span>
+<span class="nc" id="L42">		return source;</span>
+	}
+
+	@Bean(name = &quot;jdbcMessageSourceDao&quot;)
+	@ConditionalOnMissingBean
+	public SimpleJdbcMessageSourceDao jdbcMessageSourceDa(DataSource dataSource) {
+<span class="nc" id="L48">		SimpleJdbcMessageSourceDao jdbcMessageSourceDao = new SimpleJdbcMessageSourceDao();</span>
+<span class="nc" id="L49">		jdbcMessageSourceDao.setDataSource(dataSource);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (hasText(getTableName())) {</span>
+<span class="nc" id="L51">			jdbcMessageSourceDao.setTable(getTableName());</span>
+		}
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (hasText(getMessageColumnName())) {</span>
+<span class="nc" id="L54">			jdbcMessageSourceDao.setMessage(getMessageColumnName());</span>
+		}
+<span class="nc bnc" id="L56" title="All 2 branches missed.">		if (hasText(getTypeColumnName())) {</span>
+<span class="nc" id="L57">			jdbcMessageSourceDao.setType(getTypeColumnName());</span>
+		}
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (hasText(getCodeIdColumnName())) {</span>
+<span class="nc" id="L60">			jdbcMessageSourceDao.setCodeId(getCodeIdColumnName());</span>
+		}
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (hasText(getLangIdColumnName())) {</span>
+<span class="nc" id="L63">			jdbcMessageSourceDao.setLangId(getLangIdColumnName());</span>
+		}
+<span class="nc" id="L65">		return jdbcMessageSourceDao;</span>
+	}
+
+	/**
+	 * table name for the message resources
+	 *
+	 * @return table name
+	 */
+	protected String getTableName() {
+<span class="nc" id="L74">		return springI18nSupportProperties.getDataSource().getTableName();</span>
+	}
+
+	protected String getMessageColumnName() {
+<span class="nc" id="L78">		return springI18nSupportProperties.getDataSource().getMessageColumnName();</span>
+	}
+
+	protected String getTypeColumnName() {
+<span class="nc" id="L82">		return springI18nSupportProperties.getDataSource().getTypeColumnName();</span>
+	}
+
+	protected String getCodeIdColumnName() {
+<span class="nc" id="L86">		return springI18nSupportProperties.getDataSource().getCodeIdColumnName();</span>
+	}
+
+	protected String getLangIdColumnName() {
+<span class="nc" id="L90">		return springI18nSupportProperties.getDataSource().getLangIdColumnName();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

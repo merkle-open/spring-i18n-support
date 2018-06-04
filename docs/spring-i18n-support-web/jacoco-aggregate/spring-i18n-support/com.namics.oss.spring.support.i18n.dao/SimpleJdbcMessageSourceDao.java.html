@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleJdbcMessageSourceDao.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-web</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.dao</a> &gt; <span class="el_source">SimpleJdbcMessageSourceDao.java</span></div><h1>SimpleJdbcMessageSourceDao.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.dao;
+
+import com.namics.oss.spring.support.i18n.dao.jpa.model.MessageResource;
+import com.namics.oss.spring.support.i18n.exception.DataAccessException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import org.apache.commons.lang.LocaleUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.support.JdbcDaoSupport;
+import org.springframework.jdbc.object.SqlUpdate;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static org.springframework.util.CollectionUtils.isEmpty;
+
+/**
+ * SimpleJdbcMessageSourceDao provides a basic spring based implementation for using SQL Database with JDBC. You can configure SQL queries including
+ * parameter replacement. Watch concrete property descriptions for details.
+ *
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Oct 18, 2010
+ */
+<span class="fc" id="L41">public class SimpleJdbcMessageSourceDao extends JdbcDaoSupport implements MessageSourceManagementDao {</span>
+
+<span class="fc" id="L43">	private static final Logger LOG = LoggerFactory.getLogger(SimpleJdbcMessageSourceDao.class);</span>
+
+	/**
+	 * Query to use to resolve a single message in a specific language. The query is compiled at initialization time,
+	 * this means some placeholders are
+	 * resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible query the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;message column is aliased to &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;codeId column is aliased to &lt;code&gt;codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;langId column is aliased to &lt;code&gt;langid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;type column is aliased to &lt;code&gt;type&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;name of the named parameter for codeId is codeid&lt;/li&gt;
+	 * &lt;li&gt;name of the named parameter for langId is langid&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;SELECT ##MESSAGE## message,##CODEID## codeid,##LANGID## langid, ##TYPE## mtype FROM ##TABLE## WHERE ##CODEID##=:codeid AND ##LANGID##=:langid&lt;/code&gt;
+	 */
+<span class="fc" id="L66">	private String singleMessageQuery = &quot;SELECT ##MESSAGE## message,##CODEID## codeid,##LANGID## langid, ##TYPE## mtype FROM ##TABLE## WHERE ##CODEID##=:codeid AND ##LANGID##=:langid&quot;;</span>
+
+	/**
+	 * Query to use to resolve a all messages from the table. The query is compiled at initialization time, this means some placeholders are
+	 * resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##TYPE##the type column name is replaced with parameter &lt;code&gt;type&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible query the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;message column is aliased to &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;codeId column is aliased to &lt;code&gt;codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;langId column is aliased to &lt;code&gt;langid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;type column is aliased to &lt;code&gt;type&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;SELECT ##MESSAGE## message,##CODEID## codeid,##LANGID## langid, ##TYPE## type  FROM ##TABLE##&lt;/code&gt;
+	 */
+<span class="fc" id="L87">	private String allMessagesQuery = &quot;SELECT ##MESSAGE## message,##CODEID## codeid,##LANGID## langid, ##TYPE## mtype FROM ##TABLE##&quot;;</span>
+
+	/**
+	 * Query to insert a single message in a specific language. The query is compiled at initialization time, this means some placeholders are
+	 * resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible query the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;parameter for the message is named &lt;code&gt;:message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the codeId is named &lt;code&gt;:codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the langId is named &lt;code&gt;:langid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the type is named &lt;code&gt;:type&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;INSERT INTO ##TABLE## (##CODEID##, ##LANGID## ,##MESSAGE##) VALUES (:codeid,:langid,:message,:type)&lt;/code&gt;
+	 */
+<span class="fc" id="L107">	private String insertMessageQuery = &quot;INSERT INTO ##TABLE## (##CODEID##, ##LANGID## ,##MESSAGE##, ##TYPE##) VALUES (:codeid,:langid,:message,&quot; +</span>
+	                                    &quot;:type)&quot;;
+
+	/**
+	 * Query update a single message in a specific language. The query is compiled at initialization time, this means some placeholders are resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible query the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;parameter for the message is named &lt;code&gt;:message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the codeId is named &lt;code&gt;:codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;parameter for the langId is named &lt;code&gt;:langid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;UPDATE ##TABLE## SET ##MESSAGE## = :message WHERE ##CODEID## = :codeid AND ##LANGID## = :langid&lt;/code&gt;
+	 */
+<span class="fc" id="L126">	private String updateMessageQuery = &quot;UPDATE ##TABLE## SET ##MESSAGE## = :message WHERE ##CODEID## = :codeid AND ##LANGID## = :langid&quot;;</span>
+
+	/**
+	 * Query deletes a single message . The query is compiled at initialization time, this means some placeholders are resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible query the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;parameter for the codeId is named &lt;code&gt;:codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;DELETE FROM ##TABLE## WHERE ##CODEID## = :codeid&lt;/code&gt;
+	 */
+<span class="fc" id="L142">	private String deleteMessageQuery = &quot;DELETE FROM ##TABLE## WHERE ##CODEID## = :codeid&quot;;</span>
+	/**
+	 * Query deletes a single message . The query is compiled at initialization time, this means some placeholders are resolved:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;##TABLE## the table name is replaced with parameter &lt;code&gt;table&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##MESSAGE## the message column name is replaced with parameter &lt;code&gt;message&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##CODEID##the codeId column name is replaced with parameter &lt;code&gt;codeId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;##LANGID##the langId column name is replaced with parameter &lt;code&gt;langId&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * For a working compatible query the following is required:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;parameter for the codeId is named &lt;code&gt;:codeid&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * The preconfigured default is: &lt;code&gt;DELETE FROM ##TABLE## WHERE ##CODEID## = :codeid&lt;/code&gt;
+	 */
+<span class="fc" id="L157">	private String deleteMessageForLangQuery = &quot;DELETE FROM ##TABLE## WHERE ##CODEID## = :codeid AND ##LANGID##=:langid&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##TABLE##&lt;/code&gt;.
+	 */
+<span class="fc" id="L162">	private String table = &quot;MESSAGES&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##CODEID##&lt;/code&gt;.
+	 */
+<span class="fc" id="L167">	private String codeId = &quot;CODEID&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##LANGID##&lt;/code&gt;.
+	 */
+<span class="fc" id="L172">	private String langId = &quot;LANGID&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##MESSAGE##&lt;/code&gt;.
+	 */
+<span class="fc" id="L177">	private String message = &quot;MESSAGE&quot;;</span>
+
+	/**
+	 * value to replace placeholder &lt;code&gt;##MESSAGE##&lt;/code&gt;.
+	 */
+<span class="fc" id="L182">	private String type = &quot;TYPE&quot;;</span>
+
+	/**
+	 * With this map further placeholders can be configured to be replaced in the Queries. This might be useful when you have more complex structures
+	 * in the database.&lt;br/&gt;
+	 * Using this mechanism you can configure specific setups like environment dependency. Be careful with placeholders and make sure that they are
+	 * unique and recognizable. You can use a pattern like &lt;code&gt;##PLACEHOLDER##&lt;/code&gt;.&lt;br/&gt;
+	 * There are RESERVED placeholders that are replaced with configured values before evaluation of this map:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;&lt;code&gt;##TABLE##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;&lt;code&gt;##MESSAGE##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;&lt;code&gt;##LANGID##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;li&gt;&lt;code&gt;##CODEID##&lt;/code&gt;&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 */
+	private Map&lt;String, String&gt; placeholders;
+
+	/**
+	 * Sql query for a single message with replaced placeholders.
+	 */
+	private String compiledSingleMessageQuery;
+
+	/**
+	 * Sql query for all messages with replaced placeholders.
+	 */
+	private String compiledAllMessagesQuery;
+
+	/**
+	 * Sql query to insert a new message with replaced placeholders.
+	 */
+	private String compiledInsertMessageQuery;
+
+	/**
+	 * Sql query to update a message with replaced placeholders.
+	 */
+	private String compiledUpdateMessageQuery;
+
+	/**
+	 * Sql query to delete a message with replaced placeholders.
+	 */
+	private String compiledDeleteMessageQuery;
+
+	/**
+	 * Sql query to delete a message with replaced placeholders.
+	 */
+	private String compiledDeleteMessageForLangQuery;
+
+	/**
+	 * required to excecute the sql insert query.
+	 */
+	private SqlUpdate insertMessageSqlUpdate;
+
+	/**
+	 * required to excecute the sql update query.
+	 */
+	private SqlUpdate updateMessageSqlUpdate;
+
+	/**
+	 * required to execute the delete query.
+	 */
+	private SqlUpdate deleteMessageSqlUpdate;
+
+	/**
+	 * required to execute the delete query.
+	 */
+	private SqlUpdate deleteMessageForLangSqlUpdate;
+
+	/**
+	 * required to excecute the sql queries.
+	 */
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+	private List&lt;String&gt; availableLanguages;
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @see org.springframework.dao.support.DaoSupport#initDao()
+	 */
+	@Override
+	protected void initDao() throws Exception {
+<span class="fc" id="L263">		Assert.hasText(this.singleMessageQuery);</span>
+<span class="fc" id="L264">		Assert.hasText(this.allMessagesQuery);</span>
+<span class="fc" id="L265">		Assert.hasText(this.insertMessageQuery);</span>
+<span class="fc" id="L266">		Assert.hasText(this.updateMessageQuery);</span>
+<span class="fc" id="L267">		Assert.hasText(this.deleteMessageQuery);</span>
+<span class="fc" id="L268">		Assert.hasText(this.deleteMessageForLangQuery);</span>
+
+<span class="fc" id="L270">		this.compiledSingleMessageQuery = this.compileQuery(this.singleMessageQuery);</span>
+<span class="fc" id="L271">		this.compiledAllMessagesQuery = this.compileQuery(this.allMessagesQuery);</span>
+<span class="fc" id="L272">		this.compiledInsertMessageQuery = this.compileQuery(this.insertMessageQuery);</span>
+<span class="fc" id="L273">		this.compiledUpdateMessageQuery = this.compileQuery(this.updateMessageQuery);</span>
+<span class="fc" id="L274">		this.compiledDeleteMessageQuery = this.compileQuery(this.deleteMessageQuery);</span>
+<span class="fc" id="L275">		this.compiledDeleteMessageForLangQuery = this.compileQuery(this.deleteMessageForLangQuery);</span>
+
+<span class="fc" id="L277">		this.insertMessageSqlUpdate = new SqlUpdate(this.getDataSource(), this.compiledInsertMessageQuery, new int[] { Types.VARCHAR, Types.VARCHAR,</span>
+				Types.VARCHAR, Types.VARCHAR, });
+
+<span class="fc" id="L280">		this.insertMessageSqlUpdate.compile();</span>
+
+<span class="fc" id="L282">		this.updateMessageSqlUpdate = new SqlUpdate(this.getDataSource(), this.compiledUpdateMessageQuery, new int[] { Types.VARCHAR, Types.VARCHAR,</span>
+				Types.VARCHAR, });
+
+<span class="fc" id="L285">		this.updateMessageSqlUpdate.compile();</span>
+
+<span class="fc" id="L287">		this.deleteMessageSqlUpdate = new SqlUpdate(this.getDataSource(), this.compiledDeleteMessageQuery, new int[] { Types.VARCHAR });</span>
+
+<span class="fc" id="L289">		this.deleteMessageSqlUpdate.compile();</span>
+
+<span class="fc" id="L291">		this.deleteMessageForLangSqlUpdate = new SqlUpdate(this.getDataSource(), this.compiledDeleteMessageForLangQuery, new int[] { Types.VARCHAR, Types.VARCHAR });</span>
+
+<span class="fc" id="L293">		this.deleteMessageForLangSqlUpdate.compile();</span>
+
+<span class="fc" id="L295">		this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(this.getDataSource());</span>
+
+<span class="fc" id="L297">	}</span>
+
+//	@Override
+//	public List&lt;MessageResource&gt; findAll() {
+//		return null;
+//	}
+
+//	@Override
+//	public List&lt;MessageResource&gt; findByCodeAndLang(String code, String lang) {
+//		return null;
+//	}
+
+	@Override
+	public List&lt;String&gt; findDistinctLang() {
+<span class="fc bfc" id="L311" title="All 2 branches covered.">		if (this.availableLanguages == null) {</span>
+<span class="fc" id="L312">			LOG.info(&quot;Initialize available Languages.&quot;);</span>
+<span class="fc" id="L313">			List&lt;String&gt; locales = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L314">			List&lt;MessageResource&gt; messages = this.findAll();</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">			for (MessageResource resource : messages) {</span>
+<span class="fc" id="L316">				String locale = resource.getLang();</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">				if (!locales.contains(locale)) {</span>
+<span class="fc" id="L318">					locales.add(locale);</span>
+				}
+<span class="fc" id="L320">			}</span>
+<span class="fc" id="L321">			this.availableLanguages = locales;</span>
+<span class="fc" id="L322">			LOG.info(&quot;Available locales are: &quot; + ToStringBuilder.reflectionToString(locales, ToStringStyle.SHORT_PREFIX_STYLE));</span>
+		}
+<span class="fc" id="L324">		return this.availableLanguages;</span>
+	}
+
+
+	@Override
+	public List&lt;MessageResource&gt; findAll() {
+<span class="fc" id="L330">		List&lt;TableEntry&gt; messages = this.getMessageData();</span>
+<span class="fc" id="L331">		List&lt;MessageResource&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">		if (messages != null) {</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">			for (TableEntry entry : messages) {</span>
+<span class="fc" id="L334">				result.add(new MessageResource().type(entry.getType()).lang(entry.langId).code(entry.codeId).message(entry.message));</span>
+<span class="fc" id="L335">			}</span>
+		}
+<span class="fc" id="L337">		return result;</span>
+	}
+
+
+	public List&lt;MessageResourceEntry&gt; getAllMessageResourceEntries() {
+<span class="nc" id="L342">		List&lt;TableEntry&gt; messages = this.getMessageData();</span>
+<span class="nc" id="L343">		return this.convertMessageMapToResourceEntries(messages);</span>
+	}
+
+	/**
+	 * Gathers the data of all messages from the database.
+	 *
+	 * @return a list with all message table entries
+	 * @throws org.springframework.dao.DataAccessException when data access fails.
+	 */
+	private List&lt;TableEntry&gt; getMessageData() throws org.springframework.dao.DataAccessException {
+<span class="fc" id="L353">		Map&lt;String, Object&gt; namedParameters = new HashMap&lt;String, Object&gt;(0);</span>
+		List&lt;TableEntry&gt; messages;
+		try {
+<span class="fc" id="L356">			messages = this.namedParameterJdbcTemplate.query(this.compiledAllMessagesQuery, namedParameters, new TableEntryRowMapper());</span>
+<span class="nc" id="L357">		} catch (EmptyResultDataAccessException e) {</span>
+<span class="nc" id="L358">			LOG.warn(&quot;No messages found.&quot;);</span>
+<span class="nc" id="L359">			return null;</span>
+<span class="fc" id="L360">		}</span>
+<span class="fc" id="L361">		return messages;</span>
+	}
+
+	private List&lt;MessageResourceEntry&gt; convertMessageMapToResourceEntries(List&lt;TableEntry&gt; input) {
+<span class="nc" id="L365">		Map&lt;String, MessageResourceEntry&gt; entries = new HashMap&lt;String, MessageResourceEntry&gt;(input.size());</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">		for (TableEntry entry : input) {</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">			if (entries.containsKey(entry.getCodeId())) {</span>
+<span class="nc" id="L368">				entries.get(entry.getCodeId()).addLang(LocaleUtils.toLocale(entry.getLangId()), entry.message);</span>
+			} else {
+<span class="nc" id="L370">				MessageResourceEntry data = new MessageResourceEntry();</span>
+<span class="nc" id="L371">				data.setCodeId(entry.getCodeId());</span>
+<span class="nc" id="L372">				data.addLang(LocaleUtils.toLocale(entry.getLangId()), entry.getMessage());</span>
+<span class="nc" id="L373">				data.setType(entry.getType());</span>
+<span class="nc" id="L374">				entries.put(entry.getCodeId(), data);</span>
+			}
+<span class="nc" id="L376">		}</span>
+<span class="nc" id="L377">		List&lt;MessageResourceEntry&gt; result = new ArrayList&lt;MessageResourceEntry&gt;(entries.size());</span>
+<span class="nc" id="L378">		result.addAll(entries.values());</span>
+<span class="nc" id="L379">		return result;</span>
+	}
+
+	@Override
+	public List&lt;MessageResource&gt; findByCodeAndLang(String code, String lang) {
+<span class="fc" id="L384">		Map&lt;String, Object&gt; namedParameters = new HashMap&lt;String, Object&gt;();</span>
+<span class="fc" id="L385">		namedParameters.put(&quot;codeid&quot;, code);</span>
+<span class="fc" id="L386">		namedParameters.put(&quot;langid&quot;, lang);</span>
+
+<span class="fc" id="L388">		List&lt;MessageResource&gt; messageResources = new ArrayList&lt;&gt;();</span>
+		try {
+<span class="fc" id="L390">			TableEntry mR = this.namedParameterJdbcTemplate.queryForObject(this.compiledSingleMessageQuery, namedParameters,</span>
+					new TableEntryRowMapper());
+
+<span class="fc" id="L393">			messageResources.add(new MessageResource().code(mR.getCodeId()).lang(mR.getLangId()).message(mR.getMessage()).type(mR.getType()));</span>
+
+<span class="fc" id="L395">		} catch (EmptyResultDataAccessException e) {</span>
+<span class="fc" id="L396">			LOG.info(&quot;no message found for code {} and lang {}&quot;, code, lang);</span>
+<span class="fc" id="L397">		}</span>
+<span class="fc" id="L398">		return messageResources;</span>
+	}
+
+	@Override
+	public MessageResource findTopByCodeAndLang(String code, String lang) {
+<span class="fc" id="L403">		List&lt;MessageResource&gt; byCodeAndLang = findByCodeAndLang(code, lang);</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">		if (CollectionUtils.isEmpty(byCodeAndLang)) {</span>
+<span class="fc" id="L405">			return null;</span>
+		}
+<span class="fc" id="L407">		return byCodeAndLang.get(0);</span>
+	}
+
+
+	public Long deleteByCode(String code) {
+<span class="fc" id="L412">		Map&lt;String, Object&gt; namedParameters = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L413">		namedParameters.put(&quot;codeid&quot;, code);</span>
+<span class="fc" id="L414">		return Long.valueOf(this.deleteMessageSqlUpdate.updateByNamedParam(namedParameters));</span>
+	}
+
+	@Override
+	public Long deleteByCodeAndLang(String code, String lang) {
+<span class="nc" id="L419">		Map&lt;String, Object&gt; namedParameters = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L420">		namedParameters.put(&quot;codeid&quot;, code);</span>
+<span class="nc" id="L421">		namedParameters.put(&quot;langid&quot;, lang);</span>
+<span class="nc" id="L422">		return Long.valueOf(this.deleteMessageForLangSqlUpdate.updateByNamedParam(namedParameters));</span>
+	}
+
+
+	@Override
+	public MessageResource save(MessageResource messageResource) {
+<span class="fc" id="L428">		boolean update = false;</span>
+<span class="fc" id="L429">		List&lt;MessageResource&gt; msg = this.findByCodeAndLang(messageResource.getCode(), messageResource.getLang());</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">		if (!isEmpty(msg)) {</span>
+<span class="fc" id="L431">			update = true;</span>
+<span class="fc" id="L432">			LOG.info(&quot;Message[&quot; + messageResource.getCode() + &quot;] found for locale [&quot; + messageResource.getLang() + &quot;]. Update existing one.&quot;);</span>
+		}
+<span class="fc bfc" id="L434" title="All 2 branches covered.">		if (update) {</span>
+<span class="fc" id="L435">			this.updateResourceMessage(messageResource.getCode(), messageResource.getLang(), messageResource.getMessage());</span>
+		} else {
+<span class="fc" id="L437">			this.insertResourceMessage(messageResource.getCode(), messageResource.getLang(), messageResource.getMessage(),</span>
+<span class="fc" id="L438">			                           messageResource.getType());</span>
+		}
+		// check exisiting locales to be refreshed
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">		if (!this.findDistinctLang().contains(messageResource.getLang().toString())) {</span>
+<span class="nc" id="L442">			this.findDistinctLang().add(messageResource.getLang().toString());</span>
+		}
+<span class="fc" id="L444">		return messageResource;</span>
+	}
+
+	/**
+	 * Inserts a new message into the DB.
+	 *
+	 * @param code     the message code
+	 * @param language the locale of the message
+	 * @param message  the text content of the message
+	 * @throws DataAccessException when a problem occurs, especially unique constraints
+	 */
+	private void insertResourceMessage(String code,
+	                                   String language,
+	                                   String message,
+	                                   String type) {
+<span class="fc" id="L459">		Map&lt;String, Object&gt; namedParameters = new HashMap&lt;String, Object&gt;();</span>
+<span class="fc" id="L460">		namedParameters.put(&quot;codeid&quot;, code);</span>
+<span class="fc" id="L461">		namedParameters.put(&quot;langid&quot;, language);</span>
+<span class="fc" id="L462">		namedParameters.put(&quot;message&quot;, message);</span>
+<span class="fc" id="L463">		namedParameters.put(&quot;type&quot;, type);</span>
+<span class="fc" id="L464">		this.insertMessageSqlUpdate.updateByNamedParam(namedParameters);</span>
+<span class="fc" id="L465">	}</span>
+
+	/**
+	 * Updates an existing message into the DB.
+	 *
+	 * @param code     the message code
+	 * @param language the locale of the message
+	 * @param message  the text content of the message
+	 * @throws DataAccessException when a problem occurs, especially no data found
+	 */
+	private void updateResourceMessage(String code,
+	                                   String language,
+	                                   String message) {
+<span class="fc" id="L478">		Map&lt;String, Object&gt; namedParameters = new HashMap&lt;String, Object&gt;();</span>
+<span class="fc" id="L479">		namedParameters.put(&quot;codeid&quot;, code);</span>
+<span class="fc" id="L480">		namedParameters.put(&quot;langid&quot;, language);</span>
+<span class="fc" id="L481">		namedParameters.put(&quot;message&quot;, message);</span>
+<span class="fc" id="L482">		this.updateMessageSqlUpdate.updateByNamedParam(namedParameters);</span>
+<span class="fc" id="L483">	}</span>
+
+	/**
+	 * Replaces the placeholders in the query template with correct configured item names.
+	 */
+	private String compileQuery(String query) {
+<span class="fc" id="L489">		LOG.info(&quot;Compile SQL &quot; + query);</span>
+<span class="fc" id="L490">		String compiled = query.replaceAll(&quot;##MESSAGE##&quot;, this.message);</span>
+<span class="fc" id="L491">		compiled = compiled.replaceAll(&quot;##TABLE##&quot;, this.table);</span>
+<span class="fc" id="L492">		compiled = compiled.replaceAll(&quot;##CODEID##&quot;, this.codeId);</span>
+<span class="fc" id="L493">		compiled = compiled.replaceAll(&quot;##LANGID##&quot;, this.langId);</span>
+<span class="fc" id="L494">		compiled = compiled.replaceAll(&quot;##TYPE##&quot;, this.type);</span>
+<span class="pc bpc" id="L495" title="1 of 2 branches missed.">		if (!isEmpty(this.placeholders)) {</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">			for (Entry&lt;String, String&gt; entry : this.placeholders.entrySet()) {</span>
+<span class="nc" id="L497">				compiled = compiled.replaceAll(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L498">			}</span>
+		}
+<span class="fc" id="L500">		return compiled;</span>
+	}
+
+	/**
+	 * Setter for table name. @param table the table to set
+	 */
+	public void setTable(String table) {
+<span class="nc" id="L507">		this.table = table;</span>
+<span class="nc" id="L508">	}</span>
+
+	/**
+	 * Setter for codeId column name. @param codeId the codeId to set
+	 */
+	public void setCodeId(String codeId) {
+<span class="nc" id="L514">		this.codeId = codeId;</span>
+<span class="nc" id="L515">	}</span>
+
+	/**
+	 * Setter for langId column name. @param langId the langId to set
+	 */
+	public void setLangId(String langId) {
+<span class="nc" id="L521">		this.langId = langId;</span>
+<span class="nc" id="L522">	}</span>
+
+	/**
+	 * Setter for message column name. @param message the message to set
+	 */
+	public void setMessage(String message) {
+<span class="nc" id="L528">		this.message = message;</span>
+<span class="nc" id="L529">	}</span>
+
+	/**
+	 * Setter for more custom queries. @param singleMessageQuery the singleMessageQuery to set
+	 */
+	public void setSingleMessageQuery(String singleMessageQuery) {
+<span class="nc" id="L535">		this.singleMessageQuery = singleMessageQuery;</span>
+<span class="nc" id="L536">	}</span>
+
+	/**
+	 * Setter for allMessagesQuery more custom queries. @param allMessagesQuery the allMessagesQuery to set
+	 */
+	public void setAllMessagesQuery(String allMessagesQuery) {
+<span class="nc" id="L542">		this.allMessagesQuery = allMessagesQuery;</span>
+<span class="nc" id="L543">	}</span>
+
+	/**
+	 * Setter for insertMessageQuery. @param insertMessageQuery the insertMessageQuery to set
+	 */
+	public void setInsertMessageQuery(String insertMessageQuery) {
+<span class="nc" id="L549">		this.insertMessageQuery = insertMessageQuery;</span>
+<span class="nc" id="L550">	}</span>
+
+	/**
+	 * Setter for updateMessageQuery. @param updateMessageQuery the updateMessageQuery to set
+	 */
+	public void setUpdateMessageQuery(String updateMessageQuery) {
+<span class="nc" id="L556">		this.updateMessageQuery = updateMessageQuery;</span>
+<span class="nc" id="L557">	}</span>
+
+	/**
+	 * Setter for placeholders. @param placeholders the placeholders to set
+	 */
+	public void setPlaceholders(Map&lt;String, String&gt; placeholders) {
+<span class="nc" id="L563">		this.placeholders = placeholders;</span>
+<span class="nc" id="L564">	}</span>
+
+	/**
+	 * Setter for type. @param type the type to set
+	 */
+	public void setType(String type) {
+<span class="nc" id="L570">		this.type = type;</span>
+<span class="nc" id="L571">	}</span>
+
+	/**
+	 * Maps select result to a language table entry for easier select mappings.
+	 *
+	 * @author aschaefer, namics ag
+	 * @since Namics commons i18n 1.2
+	 */
+<span class="fc" id="L579">	protected static class TableEntryRowMapper implements RowMapper&lt;TableEntry&gt; {</span>
+		@Override
+		public TableEntry mapRow(ResultSet rs,
+		                         int rowNum) throws SQLException {
+<span class="fc" id="L583">			return new TableEntry(rs.getString(&quot;codeid&quot;), rs.getString(&quot;langid&quot;), rs.getString(&quot;message&quot;), rs.getString(&quot;mtype&quot;));</span>
+		}
+	}
+
+	/**
+	 * A language table entry for easier select mappings.
+	 *
+	 * @author aschaefer, namics ag
+	 * @since Namics commons i18n 1.0 - Oct 19, 2010
+	 */
+	protected static class TableEntry {
+		// CHECKSTYLE:OFF
+		protected String codeId;
+
+		protected String langId;
+
+		protected String message;
+
+		protected String type;
+
+		protected TableEntry(String codeId, String langId, String message, String type) {
+<span class="fc" id="L604">			super();</span>
+<span class="fc" id="L605">			this.codeId = codeId;</span>
+<span class="fc" id="L606">			this.langId = langId;</span>
+<span class="fc" id="L607">			this.message = message;</span>
+<span class="fc" id="L608">			this.type = type;</span>
+<span class="fc" id="L609">		}</span>
+
+		protected TableEntry() {
+<span class="nc" id="L612">			super();</span>
+<span class="nc" id="L613">		}</span>
+
+		public String getCodeId() {
+<span class="fc" id="L616">			return this.codeId;</span>
+		}
+
+		public String getLangId() {
+<span class="fc" id="L620">			return this.langId;</span>
+		}
+
+		public String getMessage() {
+<span class="fc" id="L624">			return this.message;</span>
+		}
+
+		// CHECKSTYLE:ON
+
+		/**
+		 * Getter for type. @return the type
+		 */
+		public String getType() {
+<span class="fc" id="L633">			return this.type;</span>
+		}
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

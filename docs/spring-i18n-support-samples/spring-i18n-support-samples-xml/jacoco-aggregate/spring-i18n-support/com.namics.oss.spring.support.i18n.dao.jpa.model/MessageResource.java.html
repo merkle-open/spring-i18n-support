@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MessageResource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.dao.jpa.model</a> &gt; <span class="el_source">MessageResource.java</span></div><h1>MessageResource.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2014 Namics AG. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.dao.jpa.model;
+
+
+import javax.persistence.*;
+
+/**
+ * MessageResource.
+ *
+ * @author aschaefer, Namics AG
+ * @since 18.03.14 15:33
+ */
+@Entity
+<span class="fc" id="L17">public class MessageResource</span>
+{
+	@Id
+	private String id;
+
+	@Column(length = 255)
+	private String type;
+	@Column(length = 255)
+	private String code;
+	@Column(length = 255)
+	private String lang;
+	@Lob
+	private String message;
+
+	@PrePersist
+	public void updateId()
+	{
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">		if (this.id == null)</span>
+		{
+<span class="fc" id="L36">			this.id = this.type + this.code + this.lang;</span>
+		}
+<span class="fc" id="L38">	}</span>
+
+	public String getId()
+	{
+<span class="fc" id="L42">		return id;</span>
+	}
+
+	public void setId(String id)
+	{
+<span class="nc" id="L47">		this.id = id;</span>
+<span class="nc" id="L48">	}</span>
+
+	public String getType()
+	{
+<span class="fc" id="L52">		return type;</span>
+	}
+
+	//FIXME: The following chained accessors are named as setter methods. Should be considered to be refactored/removed.
+	public MessageResource setType(String type)
+	{
+<span class="nc" id="L58">		this.type = type;</span>
+<span class="nc" id="L59">		return this;</span>
+	}
+
+	public String getCode()
+	{
+<span class="fc" id="L64">		return code;</span>
+	}
+
+	public MessageResource setCode(String code)
+	{
+<span class="nc" id="L69">		this.code = code;</span>
+<span class="nc" id="L70">		return this;</span>
+	}
+
+	public String getLang()
+	{
+<span class="fc" id="L75">		return lang;</span>
+	}
+
+	public MessageResource setLang(String lang)
+	{
+<span class="nc" id="L80">		this.lang = lang;</span>
+<span class="nc" id="L81">		return this;</span>
+	}
+
+	public String getMessage()
+	{
+<span class="fc" id="L86">		return message;</span>
+	}
+
+	public MessageResource setMessage(String message)
+	{
+<span class="nc" id="L91">		this.message = message;</span>
+<span class="nc" id="L92">		return this;</span>
+	}
+
+
+	//Chained accessors
+	public MessageResource id(String id) {
+<span class="fc" id="L98">		this.id = id;</span>
+<span class="fc" id="L99">		return this;</span>
+	}
+
+	public MessageResource type(String type) {
+<span class="fc" id="L103">		this.type = type;</span>
+<span class="fc" id="L104">		return this;</span>
+	}
+
+	public MessageResource code(String code) {
+<span class="fc" id="L108">		this.code = code;</span>
+<span class="fc" id="L109">		return this;</span>
+	}
+
+	public MessageResource lang(String lang) {
+<span class="fc" id="L113">		this.lang = lang;</span>
+<span class="fc" id="L114">		return this;</span>
+	}
+
+	public MessageResource message(String message) {
+<span class="fc" id="L118">		this.message = message;</span>
+<span class="fc" id="L119">		return this;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

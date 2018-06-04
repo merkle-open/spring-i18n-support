@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExcelReader.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.excel</a> &gt; <span class="el_source">ExcelReader.java</span></div><h1>ExcelReader.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.excel;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PushbackInputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import com.namics.oss.spring.support.i18n.exception.I18nException;
+import com.namics.oss.spring.support.i18n.model.MessageResourceEntry;
+import org.apache.commons.lang.LocaleUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+/**
+ * Util class that uses apache poi library to parse an excel resource file in namics format.
+ * The excel sheet may contain several sheets.
+ * Each sheet of the file must have the default form:
+ * &lt;ul&gt;
+ * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+ * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * The header columns define the language used for the resulting resource bundle. &lt;br /&gt;
+ * Important for treatment:
+ * &lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Header row is mandatory and defining, no empty cells in between languages are allowed&lt;/li&gt;
+ * &lt;li&gt;Column header for languages must be valid lowercase two-letter ISO-639 codes.&lt;/li&gt;
+ * &lt;li&gt;Empty rows in the content pane are ignored&lt;/li&gt;
+ * &lt;li&gt;keys without translations are ignored&lt;/li&gt;
+ * &lt;li&gt;Rows with empty KEY cell in the content body are ignored&lt;/li&gt;
+ * &lt;li&gt;Empty translation cells in the content body are ignored&lt;/li&gt;
+ * &lt;li&gt;Content cells in a column without header are ignored&lt;/li&gt;
+ * &lt;/ul&gt;
+ * The concrete row and column numbers can be configured to match more requirements like comments.
+ * 
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Oct 13, 2010
+ */
+@Component(&quot;defaultExcelReader&quot;)
+public class ExcelReader implements Excel
+{
+<span class="fc" id="L64">	private static final Logger LOG = LoggerFactory.getLogger(ExcelReader.class);</span>
+
+	/** Default value for languageHeaderRow = 0. */
+	public static final int DEFAULT_HEADER_ROW = 0;
+
+	/** Default value for keyColumn = 0. */
+	public static final int DEFAULT_KEY_COLUMN = 0;
+
+	/** Default value for firstLanguageColumn = 0. */
+	public static final int DEFAULT_FIRST_LANG_COL = 1;
+
+	/** pattern to escape funny excel character ellipsis. */
+<span class="fc" id="L76">	private static final String ESCAPE_TRIPLECOLON = String.valueOf((char) 0x2026);</span>
+
+	/** pattern to escape funny excel characters to represent a hyphen/dash. */
+	private static final String ESCAPE_DASH = (char) 0xac + &quot;|&quot; + (char) 0x2014 + &quot;|&quot; + (char) 0x2013;
+
+	/** pattern to escape funny excel characters to represent a single quote or apostroph. */
+	private static final String ESCAPE_APOSTROPH = &quot;`|´|'|‘|’&quot;;
+
+	/** pattern to escape funny excel characters to represent a double quote. */
+	private static final String ESCAPE_DOUBLE_QUOTE = &quot;“|”&quot;;
+
+	/** languageHeaderRow defines the row number in the sheet that defines the header (default:0, first row). */
+<span class="pc" id="L88">	private int languageHeaderRow = DEFAULT_HEADER_ROW;</span>
+
+	/** keyColumn defines the column that is used for the message code (default:0, the first column). */
+<span class="pc" id="L91">	private int keyColumn = DEFAULT_KEY_COLUMN;</span>
+
+	/** firstLanguageColumn defines the first column used for languages (default:1, second column). */
+<span class="pc" id="L94">	private int firstLanguageColumn = DEFAULT_FIRST_LANG_COL;</span>
+
+	/**
+	 * Constructor to create reader for default excel layout.
+	 */
+	public ExcelReader()
+	{
+<span class="fc" id="L101">		super();</span>
+<span class="fc" id="L102">	}</span>
+
+	/**
+	 * Constructor to create a reader for a customized excel.
+	 * You can use the DEFAULT_* constants to set defaults for certain values.
+	 * 
+	 * @param languageHeaderRow defines the row number in the sheet that defines the header (default:0, first row).
+	 * @param keyColumn defines the column that is used for the message code (default:0, the first column).
+	 * @param firstLanguageColumn defines the first column used for languages (default:1, second column).
+	 */
+	public ExcelReader(int languageHeaderRow, int keyColumn, int firstLanguageColumn)
+	{
+<span class="nc" id="L114">		super();</span>
+<span class="nc" id="L115">		this.languageHeaderRow = languageHeaderRow;</span>
+<span class="nc" id="L116">		this.keyColumn = keyColumn;</span>
+<span class="nc" id="L117">		this.firstLanguageColumn = firstLanguageColumn;</span>
+<span class="nc" id="L118">	}</span>
+
+	/**
+	 * Method processes a provided Excel file and reads the messages in it.
+	 * Therefore all sheets in the Excel file are read and processed.
+	 * Each sheet of the file must have the form:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+	 * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * &lt;p&gt;
+	 * The header columns define the language used for the resulting resource bundle. &lt;br /&gt;
+	 * Important for treatment:
+	 * &lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Header row is mandatory and defining, no empty cells in between languages are allowed&lt;/li&gt;
+	 * &lt;li&gt;Column header for languages must be valid lowercase two-letter ISO-639 codes.&lt;/li&gt;
+	 * &lt;li&gt;Empty rows in the content pane are ignored&lt;/li&gt;
+	 * &lt;li&gt;keys without translations are ignored&lt;/li&gt;
+	 * &lt;li&gt;Rows with empty KEY cell in the content body are ignored&lt;/li&gt;
+	 * &lt;li&gt;Empty translation cells in the content body are ignored&lt;/li&gt;
+	 * &lt;li&gt;Content cells in a column without header are ignored&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * Format may be alteret using configuration parameters of this class.
+	 * 
+	 * @param file the file to read, must be a valid Excel file (xls, xlsx)
+	 * @return a List of all property entries
+	 * @throws I18nException when something failed during Reading of the file
+	 */
+	public List&lt;MessageResourceEntry&gt; processExcel(File file) throws I18nException
+	{
+<span class="fc" id="L149">		InputStream in = null;</span>
+		try
+		{
+<span class="fc" id="L152">			in = new FileInputStream(file);</span>
+<span class="fc" id="L153">			return processExcel(in);</span>
+		}
+<span class="nc" id="L155">		catch (IOException e)</span>
+		{
+			// damn library throws general exception
+<span class="nc" id="L158">			throw new I18nException(&quot;Problem with the input file.&quot;, e);</span>
+		}
+		finally
+		{
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			if (in != null)</span>
+			{
+				try
+				{
+<span class="fc" id="L166">					in.close();</span>
+				}
+<span class="nc" id="L168">				catch (IOException e)</span>
+				{
+<span class="nc" id="L170">					LOG.error(&quot;problem closing file stream &quot; + e, e);</span>
+<span class="fc" id="L171">				}</span>
+			}
+		}
+	}
+
+	/**
+	 * Method processes a provided Excel file input stream and reads the messages in it.
+	 * Therefore all sheets in the Excel file are read and processed.
+	 * Each sheet of the file must have the form:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Line 1 (Header): KEY | de | fr | more iso-language-codes ...&lt;/li&gt;
+	 * &lt;li&gt;Line 2..n (Values): message.key | Deutsch | Francaise | other translation&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * &lt;p&gt;
+	 * The header columns define the language used for the resulting resource bundle. &lt;br /&gt;
+	 * Important for treatment:
+	 * &lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Header row is mandatory and defining, no empty cells in between languages are allowed&lt;/li&gt;
+	 * &lt;li&gt;Column header for languages must be valid lowercase two-letter ISO-639 codes.&lt;/li&gt;
+	 * &lt;li&gt;Empty rows in the content pane are ignored&lt;/li&gt;
+	 * &lt;li&gt;keys without translations are ignored&lt;/li&gt;
+	 * &lt;li&gt;Rows with empty KEY cell in the content body are ignored&lt;/li&gt;
+	 * &lt;li&gt;Empty translation cells in the content body are ignored&lt;/li&gt;
+	 * &lt;li&gt;Content cells in a column without header are ignored&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * Format may be altered using configuration parameters of this class.
+	 * 
+	 * @param input the input stream of the file to read, must be a valid Excel file (xls, xlsx)
+	 * @return a List of all property entries
+	 * @throws I18nException when something failed during Reading of the file
+	 */
+	public List&lt;MessageResourceEntry&gt; processExcel(InputStream input) throws I18nException
+	{
+<span class="fc" id="L205">		InputStream in = null;</span>
+		try
+		{
+			// make sure its buffered and compatible with apache poi requirements
+<span class="fc" id="L209">			in = new PushbackInputStream(new BufferedInputStream(input));</span>
+
+<span class="fc" id="L211">			List&lt;MessageResourceEntry&gt; entries = new ArrayList&lt;MessageResourceEntry&gt;();</span>
+<span class="fc" id="L212">			Workbook workbook = WorkbookFactory.create(in);</span>
+<span class="fc" id="L213">			int sheetCount = workbook.getNumberOfSheets();</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			for (int i = 0; i &lt; sheetCount; i++)</span>
+			{
+<span class="fc" id="L216">				String resourceName = Integer.valueOf(i).toString();</span>
+<span class="fc" id="L217">				LOG.info(&quot;process sheet number [&quot; + resourceName + &quot;]&quot;);</span>
+
+				// read sheet information
+<span class="fc" id="L220">				Sheet sheet = workbook.getSheetAt(i);</span>
+<span class="fc" id="L221">				resourceName = workbook.getSheetName(i);</span>
+<span class="fc" id="L222">				LOG.info(&quot;sheet name is [&quot; + resourceName + &quot;]&quot;);</span>
+
+				// get language count and names(language keys)
+<span class="fc" id="L225">				Map&lt;Integer, Locale&gt; langKeys = parseHeaderRow(sheet);</span>
+
+<span class="fc bfc" id="L227" title="All 2 branches covered.">				if (langKeys != null)</span>
+				{
+<span class="fc bfc" id="L229" title="All 2 branches covered.">					for (Iterator&lt;?&gt; rit = sheet.rowIterator(); rit.hasNext();)</span>
+					{
+<span class="fc" id="L231">						Row row = (Row) rit.next();</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">						if (row.getRowNum() &gt; this.languageHeaderRow)</span>
+						{
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">							parseContentBodyRow(entries, langKeys, row, &quot;DEFAULT&quot;.equals(resourceName) ? null : resourceName);</span>
+						}
+<span class="fc" id="L236">					}</span>
+				}
+				else
+				{
+<span class="fc" id="L240">					LOG.info(&quot;sheet [&quot; + resourceName + &quot;] has no content.&quot;);</span>
+				}
+			}
+<span class="fc" id="L243">			return entries;</span>
+		}
+		// CHECKSTYLE:OFF
+<span class="nc" id="L246">		catch (Exception e)</span>
+		{
+			// damn library throws general exception
+<span class="nc" id="L249">			throw new I18nException(&quot;Unspecific Error creating Workbook.&quot;, e);</span>
+		}
+		// CHECKSTYLE:ON
+		finally
+		{
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">			if (in != null)</span>
+			{
+				try
+				{
+<span class="fc" id="L258">					in.close();</span>
+				}
+<span class="nc" id="L260">				catch (IOException e)</span>
+				{
+<span class="nc" id="L262">					LOG.error(&quot;problem closing file stream &quot; + e, e);</span>
+<span class="fc" id="L263">				}</span>
+			}
+		}
+	}
+
+	/**
+	 * Method parses a row of the body content and puts the related entry into the result list (entries).
+	 * If the row is invalid in any kind, no modification happens. If any of the parameters provided is null or invalid,
+	 * no modification happens.
+	 * 
+	 * @param entries the list of entries, where the result of the row should be put in
+	 * @param langKeys the language information to parse the row correctly
+	 * @param row the row to be processed.
+	 */
+	private void parseContentBodyRow(	List&lt;MessageResourceEntry&gt; entries,
+										Map&lt;Integer, Locale&gt; langKeys,
+										Row row,
+										String type)
+	{
+<span class="pc bpc" id="L282" title="4 of 8 branches missed.">		if (entries == null || row == null || langKeys == null || langKeys.isEmpty())</span>
+		{
+<span class="nc" id="L284">			return;</span>
+		}
+<span class="fc" id="L286">		MessageResourceEntry entry = new MessageResourceEntry();</span>
+<span class="fc" id="L287">		String code = getCellStringValue(row.getCell(this.keyColumn));</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">		if (!StringUtils.isBlank(code))</span>
+		{
+<span class="fc" id="L290">			entry.setCodeId(StringUtils.trim(code));</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">			for (int nameIndex = this.firstLanguageColumn; nameIndex &lt;= langKeys.size(); nameIndex++)</span>
+			{
+<span class="fc" id="L293">				Cell cell = row.getCell(nameIndex);</span>
+<span class="fc" id="L294">				String name = getCellStringValue(cell);</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">				if (!StringUtils.isBlank(name))</span>
+				{
+<span class="fc" id="L297">					Locale lang = langKeys.get(nameIndex);</span>
+<span class="fc" id="L298">					entry.addLang(lang, name);</span>
+				}
+			}
+<span class="fc bfc" id="L301" title="All 2 branches covered.">			if (entry.size() &gt; 0)</span>
+			{
+<span class="fc" id="L303">				entry.setType(type);</span>
+<span class="fc" id="L304">				entries.add(entry);</span>
+			}
+		}
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (LOG.isDebugEnabled())</span>
+		{
+<span class="nc" id="L309">			LOG.debug(ToStringBuilder.reflectionToString(entry, ToStringStyle.SHORT_PREFIX_STYLE));</span>
+		}
+<span class="fc" id="L311">	}</span>
+
+	/**
+	 * Method parses the header row of the sheet to extract the languages.
+	 * 
+	 * @param sheet the Excel sheet to process
+	 * @return a Map with column number to language mapping.
+	 */
+	private Map&lt;Integer, Locale&gt; parseHeaderRow(Sheet sheet) throws I18nException
+	{
+
+<span class="pc bpc" id="L322" title="1 of 4 branches missed.">		if (sheet == null || sheet.getRow(this.languageHeaderRow) == null)</span>
+		{
+<span class="fc" id="L324">			return null;</span>
+		}
+<span class="fc" id="L326">		Map&lt;Integer, Locale&gt; langKeys = new HashMap&lt;Integer, Locale&gt;();</span>
+<span class="fc" id="L327">		Map&lt;Integer, String&gt; invalidKeys = new HashMap&lt;Integer, String&gt;();</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">		for (Iterator&lt;?&gt; cit = sheet.getRow(this.languageHeaderRow).cellIterator(); cit.hasNext();)</span>
+		{
+<span class="fc" id="L330">			Cell cell = (Cell) cit.next();</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">			if (cell.getColumnIndex() &gt;= this.firstLanguageColumn)</span>
+			{
+<span class="fc" id="L333">				String value = cell.getRichStringCellValue().getString();</span>
+				try
+				{
+<span class="fc" id="L336">					Locale locale = LocaleUtils.toLocale(value);</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">					if (locale != null)</span>
+					{
+<span class="fc" id="L339">						langKeys.put(cell.getColumnIndex(), locale);</span>
+					}
+					else
+					{
+<span class="nc" id="L343">						invalidKeys.put(cell.getColumnIndex(), value);</span>
+					}
+				}
+<span class="nc" id="L346">				catch (IllegalArgumentException e)</span>
+				{
+<span class="nc" id="L348">					invalidKeys.put(cell.getColumnIndex(), value);</span>
+<span class="fc" id="L349">				}</span>
+			}
+<span class="fc" id="L351">		}</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		if (!invalidKeys.isEmpty())</span>
+		{
+<span class="nc" id="L354">			throw new I18nException(&quot;Invalid column header in this sheet:&quot; + invalidKeys.toString());</span>
+		}
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">		if (langKeys.isEmpty())</span>
+		{
+<span class="nc" id="L358">			return null;</span>
+		}
+<span class="fc" id="L360">		LOG.info(&quot;languages found:  [&quot; + langKeys.values() + &quot;]&quot;);</span>
+<span class="fc" id="L361">		return langKeys;</span>
+	}
+
+	/**
+	 * Returns the valid String value of the cell, empty String if not a valid String value.
+	 * 
+	 * @param cell cell to get the value
+	 * @return the value as string if valid, empty string else
+	 */
+	private String getCellStringValue(Cell cell)
+	{
+<span class="fc" id="L372">		String result = &quot;&quot;;</span>
+<span class="pc bpc" id="L373" title="2 of 6 branches missed.">		if (cell != null &amp;&amp; cell.getRichStringCellValue() != null &amp;&amp; cell.getRichStringCellValue().getString() != null)</span>
+		{
+<span class="fc" id="L375">			result = cell.getRichStringCellValue().getString();</span>
+		}
+<span class="fc" id="L377">		return escape(result);</span>
+	}
+
+	/**
+	 * Does some escaping of funny excel characters.
+	 * 
+	 * @param input the string to escape
+	 * @return the escaped string
+	 */
+	private String escape(String input)
+	{
+<span class="fc" id="L388">		String result = input;</span>
+<span class="fc" id="L389">		result = result.replaceAll(ESCAPE_TRIPLECOLON, &quot;...&quot;);</span>
+<span class="fc" id="L390">		result = result.replaceAll(ESCAPE_DASH, &quot;-&quot;);</span>
+<span class="fc" id="L391">		result = result.replaceAll(ESCAPE_APOSTROPH, &quot;'&quot;);</span>
+<span class="fc" id="L392">		result = result.replaceAll(ESCAPE_DOUBLE_QUOTE, &quot;\&quot;&quot;);</span>
+<span class="fc" id="L393">		return result;</span>
+	}
+
+	// CHECKSTYLE:OFF
+	public void setLanguageHeaderRow(int languageHeaderRow)
+	{
+<span class="nc" id="L399">		this.languageHeaderRow = languageHeaderRow;</span>
+<span class="nc" id="L400">	}</span>
+
+	public void setFirstLanguageColumn(int firstLanguageColumn)
+	{
+<span class="nc" id="L404">		this.firstLanguageColumn = firstLanguageColumn;</span>
+<span class="nc" id="L405">	}</span>
+
+	public void setKeyColumn(int keyColumn)
+	{
+<span class="nc" id="L409">		this.keyColumn = keyColumn;</span>
+<span class="nc" id="L410">	}</span>
+	// CHECKSTYLE:ON
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

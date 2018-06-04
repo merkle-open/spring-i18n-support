@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReloadServiceImpl.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-starter</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.service</a> &gt; <span class="el_source">ReloadServiceImpl.java</span></div><h1>ReloadServiceImpl.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2000-2010 namics ag. All rights reserved.
+ */
+
+package com.namics.oss.spring.support.i18n.service;
+
+import java.util.Map;
+
+import com.namics.oss.spring.support.i18n.context.support.Reloadable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+import com.namics.oss.spring.support.i18n.exception.ReloadableResourceException;
+
+/**
+ * ReloadServiceImpl does an application context scan for {@link Reloadable} classes and calls their reload() method.
+ * 
+ * @author aschaefer, namics ag
+ * @since Namics commons i18n 1.0 - Nov 19, 2010
+ */
+<span class="nc" id="L24">public class ReloadServiceImpl implements ReloadService, ApplicationContextAware</span>
+{
+
+<span class="nc" id="L27">	private static final Logger LOG = LoggerFactory.getLogger(ReloadServiceImpl.class);</span>
+
+	private ApplicationContext applicationContext;
+
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @see MessageManagementService#reload()
+	 */
+	@Override
+	public void reload()
+	{
+
+<span class="nc bnc" id="L40" title="All 2 branches missed.">		if (this.applicationContext != null)</span>
+		{
+<span class="nc" id="L42">			LOG.info(&quot;Start reloading beans in application context...&quot;);</span>
+<span class="nc" id="L43">			Map&lt;String, Reloadable&gt; beans = this.applicationContext.getBeansOfType(Reloadable.class);</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">			for (Reloadable reloadableBean : beans.values())</span>
+			{
+				try
+				{
+<span class="nc" id="L48">					LOG.debug(&quot;Trying to reload bean &quot; + reloadableBean.getClass().getName());</span>
+<span class="nc" id="L49">					reloadableBean.reload();</span>
+				}
+<span class="nc" id="L51">				catch (ReloadableResourceException rre)</span>
+				{
+<span class="nc" id="L53">					LOG.warn(&quot;Reloading bean &quot; + reloadableBean.getClass().getName() + &quot; failed!&quot;, rre);</span>
+<span class="nc" id="L54">				}</span>
+<span class="nc" id="L55">			}</span>
+<span class="nc" id="L56">			LOG.info(&quot;End reloading beans in application context...&quot;);</span>
+<span class="nc" id="L57">		}</span>
+		else
+		{
+			// we are not in a spring context
+<span class="nc" id="L61">			LOG.info(&quot;Start reloading beans in the JVM...&quot;);</span>
+<span class="nc" id="L62">			LOG.warn(&quot;At the moment this function is supported in a spring context only!&quot;);</span>
+<span class="nc" id="L63">			LOG.info(&quot;End reloading beans in the JVM...&quot;);</span>
+		}
+<span class="nc" id="L65">	}</span>
+
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @see org.springframework.context.ApplicationContextAware#setApplicationContext(org.springframework.context.ApplicationContext)
+	 */
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException
+	{
+<span class="nc" id="L75">		this.applicationContext = applicationContext;</span>
+<span class="nc" id="L76">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

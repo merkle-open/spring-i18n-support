@@ -44,7 +44,7 @@
 
 							<div class="col-md-4">
 								<input id="message{{=lang}}" name="message" class="input-md form-control"
-									   value="{{=it.message.codeId && it.message.nameMappings[lang]?it.message.nameMappings[lang]:''}}"/>
+									   value="{{!it.message.codeId && it.message.nameMappings[lang]?it.message.nameMappings[lang]:''}}"/>
 							</div>
 						</div>
 						{{~}}

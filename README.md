@@ -15,7 +15,7 @@ This modules aims to provide i18n database ressource.
 	<dependency>
 		<groupId>com.namics.oss.spring.support.i18n</groupId>
 		<artifactId>spring-i18n-support</artifactId>
-		<version>1.0.0</version>
+		<version>1.1.0</version>
 	</dependency>
 	
 ### Requirements	

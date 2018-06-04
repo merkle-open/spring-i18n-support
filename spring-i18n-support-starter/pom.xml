@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>com.namics.oss.spring.support.i18n</groupId>
 		<artifactId>spring-i18n-support-pom</artifactId>
-		<version>1.0.1</version>
+		<version>1.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>spring-i18n-support-starter</artifactId>
-	<version>1.0.1</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>spring-i18n-support-starter</name>
@@ -20,6 +20,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
+		<main.basedir>${project.basedir}/..</main.basedir>
 	</properties>
 
 	<dependencies>

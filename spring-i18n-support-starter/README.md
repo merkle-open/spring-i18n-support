@@ -2,7 +2,7 @@
 
 Spring-I18n-Support module can be configured using Auto-Configuration. This document provides a basic overview on how to utilize the spring-i18n-support-starter. Detailed information on how to work with the starter may be observed in the spring-i18n-support-samples-starter project.
 
-## Step 1: Add the required dependencies
+## Step 1: add the required dependencies
 
 Add the dependency for the module itself (i.e. spring-i18n-support) and the corresponding starter module (i.e. spring-i18n-support-starter) which is responsible for the auto-configuration of the module.
 
@@ -22,8 +22,8 @@ Add the dependency for the module itself (i.e. spring-i18n-support) and the corr
 		<version>1.0.0</version>
 	</dependency>
 	
-### Configuration of the data source
-The following properties could be used to customize the table and column names, which were used for the message entries.
+## Step 2: configure the datasource
+The following properties could be used to customize the table and column names, which were used for the message entries. _For sqlExportLineBreak, current system property <code>line.separator</code> is default ._
 
 
     # Optional properties for spring-i18n-support
@@ -32,6 +32,10 @@ The following properties could be used to customize the table and column names, 
     com.namics.oss.spring.support.i18n.dataSource.langIdColumnName=LANGID
     com.namics.oss.spring.support.i18n.dataSource.messageColumnName=MESSAGE
     com.namics.oss.spring.support.i18n.dataSource.typeColumnName=TYPE
+    com.namics.oss.spring.support.i18n.dataSource.sqlExportScriptTemplatePath=classpath:/templates/template.sql
+    com.namics.oss.spring.support.i18n.dataSource.sqlExportInsertStatementTemplate=INSERT INTO ##TABLE## (##CODEID##, ##LANGID##, ##MESSAGE##, ##TYPE##) VALUES (:codeid, :langid, :message, :type);
+    com.namics.oss.spring.support.i18n.dataSource.sqlExportBodyPlaceholder=##BODY##
+    com.namics.oss.spring.support.i18n.dataSource.sqlExportLineBreak=\n
     
 You have to create the table yourself. With the following SQL Script, you create the default table used for labels:
 
@@ -45,7 +49,7 @@ You have to create the table yourself. With the following SQL Script, you create
 	);
 	
 
-### Configuration of the web interface
+## Step 3 (optional): configure the web interface
 The starter allows you to override the default settings for servlet-name and servlet-mapping.
 
     # Optional properties for spring-i18n-support

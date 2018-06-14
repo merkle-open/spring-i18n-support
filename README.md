@@ -18,7 +18,7 @@ This modules aims to provide i18n database resource.
 		<version>1.1.0</version>
 	</dependency>
 	
-This modules are using spring auto-configured beans. Setup instructions and configuration options can be found in the [spring-i18n-support-starter](spring-i18n-support-starter) module.
+This modules are using spring auto-configured beans. Setup instructions and configuration options can be found in the [spring-i18n-support-starter](spring-i18n-support-starter) module. If you are not using spring boot Auto-Configuration, have a look at [spring-i18n-support](spring-i18n-support) module.
 
 ### Requirements	
 

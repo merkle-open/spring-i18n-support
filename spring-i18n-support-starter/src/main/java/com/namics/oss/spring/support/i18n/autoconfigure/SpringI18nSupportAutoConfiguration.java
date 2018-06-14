@@ -106,6 +106,21 @@ public class SpringI18nSupportAutoConfiguration {
 		if (hasText(getSqlLineBreak())) {
 			sqlScriptWriter.setLineBreak(getSqlLineBreak());
 		}
+		if (hasText(getTableName())) {
+			sqlScriptWriter.setTable(getTableName());
+		}
+		if (hasText(getMessageColumnName())) {
+			sqlScriptWriter.setMessage(getMessageColumnName());
+		}
+		if (hasText(getTypeColumnName())) {
+			sqlScriptWriter.setType(getTypeColumnName());
+		}
+		if (hasText(getCodeIdColumnName())) {
+			sqlScriptWriter.setCodeId(getCodeIdColumnName());
+		}
+		if (hasText(getLangIdColumnName())) {
+			sqlScriptWriter.setLangId(getLangIdColumnName());
+		}
 		return sqlScriptWriter;
 	}
 

@@ -102,6 +102,26 @@ public class SpringI18nSupportProperties {
 		 */
 		private String typeColumnName = "TYPE";
 
+		/**
+		 * classpath for sql script export template.
+		 */
+		private String sqlExportScriptTemplatePath = "classpath:/templates/template.sql";
+
+		/**
+		 * sql export INSERT statement template.
+		 */
+		private String sqlExportInsertStatementTemplate = "INSERT INTO ##TABLE## (##CODEID##, ##LANGID##, ##MESSAGE##, ##TYPE##) VALUES (:codeid, :langid, :message, :type);";
+
+		/**
+		 * sql export body placeholder (replaced by INSERT statements).
+		 */
+		private String sqlExportBodyPlaceholder = "##BODY##";
+
+		/**
+		 * sql export character to use for line breaks.
+		 */
+		private String sqlExportLineBreak = System.getProperty("line.separator", "\n");
+
 		public String getTableName() {
 			return tableName;
 		}
@@ -140,6 +160,38 @@ public class SpringI18nSupportProperties {
 
 		public void setTypeColumnName(String typeColumnName) {
 			this.typeColumnName = typeColumnName;
+		}
+
+		public String getSqlExportScriptTemplatePath() {
+			return sqlExportScriptTemplatePath;
+		}
+
+		public void setSqlExportScriptTemplatePath(String sqlExportScriptTemplatePath) {
+			this.sqlExportScriptTemplatePath = sqlExportScriptTemplatePath;
+		}
+
+		public String getSqlExportInsertStatementTemplate() {
+			return sqlExportInsertStatementTemplate;
+		}
+
+		public void setSqlExportInsertStatementTemplate(String sqlExportInsertStatementTemplate) {
+			this.sqlExportInsertStatementTemplate = sqlExportInsertStatementTemplate;
+		}
+
+		public String getSqlExportBodyPlaceholder() {
+			return sqlExportBodyPlaceholder;
+		}
+
+		public void setSqlExportBodyPlaceholder(String sqlExportBodyPlaceholder) {
+			this.sqlExportBodyPlaceholder = sqlExportBodyPlaceholder;
+		}
+
+		public String getSqlExportLineBreak() {
+			return sqlExportLineBreak;
+		}
+
+		public void setSqlExportLineBreak(String sqlExportLineBreak) {
+			this.sqlExportLineBreak = sqlExportLineBreak;
 		}
 	}
 

@@ -2,6 +2,9 @@ package com.namics.oss.spring.support.i18n.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * SpringI18nSupportProperties.
  *
@@ -15,6 +18,8 @@ public class SpringI18nSupportProperties {
 	private Web web = new Web();
 
 	private DataSource dataSource = new DataSource();
+
+	private Fallback fallback = new Fallback();
 
 	public Web getWeb() {
 		return web;
@@ -39,6 +44,19 @@ public class SpringI18nSupportProperties {
 
 	public SpringI18nSupportProperties dataSource(DataSource dataSource) {
 		setDataSource(dataSource);
+		return this;
+	}
+
+	public Fallback getFallback() {
+		return fallback;
+	}
+
+	public void setFallback(Fallback fallback) {
+		this.fallback = fallback;
+	}
+
+	public SpringI18nSupportProperties fallback(Fallback fallback) {
+		setFallback(fallback);
 		return this;
 	}
 
@@ -70,6 +88,82 @@ public class SpringI18nSupportProperties {
 
 		public void setServletMapping(String servletMapping) {
 			this.servletMapping = servletMapping;
+		}
+	}
+
+	public static class Fallback {
+		public static final String NAMICS_SPRING_I18N_PROPERTIES_WEB = NAMICS_SPRING_I18N_PROPERTIES_PREFIX + ".fallback";
+
+		/**
+		 * use the code as message if no message found
+		 */
+		private boolean useCodeAsDefaultMessage = true;
+
+		/**
+		 * use configured fallback langs also for languages, which are available in db table.
+		 */
+		private boolean fallbackForKnownLanguages = false;
+		/**
+		 * use configured fallback langs for languages, which are not available in db table.
+		 */
+		private boolean fallbackForUnknownLanguages = false;
+
+		/**
+		 * used fallback languages.
+		 */
+		private List<String> fallbackLanguage = new ArrayList<>();
+
+
+		public boolean isUseCodeAsDefaultMessage() {
+			return useCodeAsDefaultMessage;
+		}
+
+		public void setUseCodeAsDefaultMessage(boolean useCodeAsDefaultMessage) {
+			this.useCodeAsDefaultMessage = useCodeAsDefaultMessage;
+		}
+
+		public Fallback useCodeAsDefaultMessage(boolean useCodeAsDefaultMessage) {
+			setUseCodeAsDefaultMessage(useCodeAsDefaultMessage);
+			return this;
+		}
+
+		public boolean isFallbackForKnownLanguages() {
+			return fallbackForKnownLanguages;
+		}
+
+		public void setFallbackForKnownLanguages(boolean fallbackForKnownLanguages) {
+			this.fallbackForKnownLanguages = fallbackForKnownLanguages;
+		}
+
+		public Fallback fallbackForKnownLanguages(boolean fallbackForKnownLanguages) {
+			setFallbackForKnownLanguages(fallbackForKnownLanguages);
+			return this;
+		}
+
+		public boolean isFallbackForUnknownLanguages() {
+			return fallbackForUnknownLanguages;
+		}
+
+		public void setFallbackForUnknownLanguages(boolean fallbackForUnknownLanguages) {
+			this.fallbackForUnknownLanguages = fallbackForUnknownLanguages;
+		}
+
+		public Fallback fallbackForUnknownLanguages(boolean fallbackForUnknownLanguages) {
+			setFallbackForUnknownLanguages(fallbackForUnknownLanguages);
+			return this;
+		}
+
+		public List<String> getFallbackLanguage() {
+			return fallbackLanguage;
+		}
+
+		public void setFallbackLanguage(List<String> fallbackLanguage) {
+			this.fallbackLanguage = fallbackLanguage;
+		}
+
+		public Fallback fallbackLanguage(List<String> fallbackLanguage) {
+			setFallbackLanguage(fallbackLanguage);
+			return this;
 		}
 	}
 

@@ -21,7 +21,12 @@ import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
 
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toMap;
+import static org.springframework.util.CollectionUtils.isEmpty;
 import static org.springframework.util.StringUtils.hasText;
 
 /**
@@ -46,7 +51,18 @@ public class SpringI18nSupportAutoConfiguration {
 	public DaoMessageSource i18nMessageSource(MessageSourceDao messageSourceDao) {
 		DaoMessageSource source = new DaoMessageSource();
 		source.setMessageSourceDao(messageSourceDao);
-		source.setUseCodeAsDefaultMessage(true);
+		source.setUseCodeAsDefaultMessage(springI18nSupportProperties.getFallback().isUseCodeAsDefaultMessage());
+
+		//set fallbacks if at least one is enabled and one fallback lang is available
+		boolean fallbackForKnownLanguages = springI18nSupportProperties.getFallback().isFallbackForKnownLanguages();
+		boolean fallbackForUnknownLanguages = springI18nSupportProperties.getFallback().isFallbackForUnknownLanguages();
+		List<String> fallbackLanguage = springI18nSupportProperties.getFallback().getFallbackLanguage();
+		if (!isEmpty(fallbackLanguage) && (fallbackForKnownLanguages || fallbackForUnknownLanguages)) {
+			source.setFallbackForKnownLanguages(fallbackForKnownLanguages);
+			source.setFallbackForUnknownLanguages(fallbackForUnknownLanguages);
+			source.setFallbacks(IntStream.range(0, fallbackLanguage.size()).boxed().collect(toMap(Function.identity(), fallbackLanguage::get)));
+
+		}
 		return source;
 	}
 

@@ -26,12 +26,14 @@
 		min-height: 300px;
 		height: 50%;
 		border: none;
-		padding-top: 10px;
+		padding-top: 20px;
 	}
 </style>
 <body>
 
 <h1>Spring Boot with Spring i18n Demo</h1>
+
+<p data-th-text="#{messages.i18n-view.pragraph.text}">Lable test</p>
 
 <div>
 	<iframe class="frame" data-th-src="@{'/i18n/list.html'}"></iframe>

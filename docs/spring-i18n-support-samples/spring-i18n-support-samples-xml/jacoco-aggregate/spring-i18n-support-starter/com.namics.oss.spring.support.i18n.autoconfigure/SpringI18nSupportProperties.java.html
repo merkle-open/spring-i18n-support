@@ -2,6 +2,9 @@
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * SpringI18nSupportProperties.
  *
@@ -9,41 +12,56 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 13.09.17 16:25
  */
 @ConfigurationProperties(prefix = SpringI18nSupportProperties.NAMICS_SPRING_I18N_PROPERTIES_PREFIX)
-<span class="nc" id="L12">public class SpringI18nSupportProperties {</span>
+<span class="nc" id="L15">public class SpringI18nSupportProperties {</span>
 	public static final String NAMICS_SPRING_I18N_PROPERTIES_PREFIX = &quot;com.namics.oss.spring.support.i18n&quot;;
 
-<span class="nc" id="L15">	private Web web = new Web();</span>
+<span class="nc" id="L18">	private Web web = new Web();</span>
 
-<span class="nc" id="L17">	private DataSource dataSource = new DataSource();</span>
+<span class="nc" id="L20">	private DataSource dataSource = new DataSource();</span>
+
+<span class="nc" id="L22">	private Fallback fallback = new Fallback();</span>
 
 	public Web getWeb() {
-<span class="nc" id="L20">		return web;</span>
+<span class="nc" id="L25">		return web;</span>
 	}
 
 	public void setWeb(Web web) {
-<span class="nc" id="L24">		this.web = web;</span>
-<span class="nc" id="L25">	}</span>
+<span class="nc" id="L29">		this.web = web;</span>
+<span class="nc" id="L30">	}</span>
 
 	public SpringI18nSupportProperties web(Web web) {
-<span class="nc" id="L28">		setWeb(web);</span>
-<span class="nc" id="L29">		return this;</span>
+<span class="nc" id="L33">		setWeb(web);</span>
+<span class="nc" id="L34">		return this;</span>
 	}
 
 	public DataSource getDataSource() {
-<span class="nc" id="L33">		return dataSource;</span>
+<span class="nc" id="L38">		return dataSource;</span>
 	}
 
 	public void setDataSource(DataSource dataSource) {
-<span class="nc" id="L37">		this.dataSource = dataSource;</span>
-<span class="nc" id="L38">	}</span>
+<span class="nc" id="L42">		this.dataSource = dataSource;</span>
+<span class="nc" id="L43">	}</span>
 
 	public SpringI18nSupportProperties dataSource(DataSource dataSource) {
-<span class="nc" id="L41">		setDataSource(dataSource);</span>
-<span class="nc" id="L42">		return this;</span>
+<span class="nc" id="L46">		setDataSource(dataSource);</span>
+<span class="nc" id="L47">		return this;</span>
+	}
+
+	public Fallback getFallback() {
+<span class="nc" id="L51">		return fallback;</span>
+	}
+
+	public void setFallback(Fallback fallback) {
+<span class="nc" id="L55">		this.fallback = fallback;</span>
+<span class="nc" id="L56">	}</span>
+
+	public SpringI18nSupportProperties fallback(Fallback fallback) {
+<span class="nc" id="L59">		setFallback(fallback);</span>
+<span class="nc" id="L60">		return this;</span>
 	}
 
 
-<span class="nc" id="L46">	public static class Web {</span>
+<span class="nc" id="L64">	public static class Web {</span>
 		public static final String NAMICS_SPRING_I18N_PROPERTIES_WEB = NAMICS_SPRING_I18N_PROPERTIES_PREFIX + &quot;.web&quot;;
 
 		/**
@@ -57,90 +75,218 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 		private String servletMapping;
 
 		public String getServletName() {
-<span class="nc" id="L60">			return servletName;</span>
+<span class="nc" id="L78">			return servletName;</span>
 		}
 
 		public void setServletName(String servletName) {
-<span class="nc" id="L64">			this.servletName = servletName;</span>
-<span class="nc" id="L65">		}</span>
+<span class="nc" id="L82">			this.servletName = servletName;</span>
+<span class="nc" id="L83">		}</span>
 
 		public String getServletMapping() {
-<span class="nc" id="L68">			return servletMapping;</span>
+<span class="nc" id="L86">			return servletMapping;</span>
 		}
 
 		public void setServletMapping(String servletMapping) {
-<span class="nc" id="L72">			this.servletMapping = servletMapping;</span>
-<span class="nc" id="L73">		}</span>
+<span class="nc" id="L90">			this.servletMapping = servletMapping;</span>
+<span class="nc" id="L91">		}</span>
 	}
 
-<span class="nc" id="L76">	public static class DataSource {</span>
+<span class="nc" id="L94">	public static class Fallback {</span>
+		public static final String NAMICS_SPRING_I18N_PROPERTIES_WEB = NAMICS_SPRING_I18N_PROPERTIES_PREFIX + &quot;.fallback&quot;;
+
+		/**
+		 * use the code as message if no message found
+		 */
+<span class="nc" id="L100">		private boolean useCodeAsDefaultMessage = true;</span>
+
+		/**
+		 * use configured fallback langs also for languages, which are available in db table.
+		 */
+<span class="nc" id="L105">		private boolean fallbackForKnownLanguages = false;</span>
+		/**
+		 * use configured fallback langs for languages, which are not available in db table.
+		 */
+<span class="nc" id="L109">		private boolean fallbackForUnknownLanguages = false;</span>
+
+		/**
+		 * used fallback languages.
+		 */
+<span class="nc" id="L114">		private List&lt;String&gt; fallbackLanguage = new ArrayList&lt;&gt;();</span>
+
+
+		public boolean isUseCodeAsDefaultMessage() {
+<span class="nc" id="L118">			return useCodeAsDefaultMessage;</span>
+		}
+
+		public void setUseCodeAsDefaultMessage(boolean useCodeAsDefaultMessage) {
+<span class="nc" id="L122">			this.useCodeAsDefaultMessage = useCodeAsDefaultMessage;</span>
+<span class="nc" id="L123">		}</span>
+
+		public Fallback useCodeAsDefaultMessage(boolean useCodeAsDefaultMessage) {
+<span class="nc" id="L126">			setUseCodeAsDefaultMessage(useCodeAsDefaultMessage);</span>
+<span class="nc" id="L127">			return this;</span>
+		}
+
+		public boolean isFallbackForKnownLanguages() {
+<span class="nc" id="L131">			return fallbackForKnownLanguages;</span>
+		}
+
+		public void setFallbackForKnownLanguages(boolean fallbackForKnownLanguages) {
+<span class="nc" id="L135">			this.fallbackForKnownLanguages = fallbackForKnownLanguages;</span>
+<span class="nc" id="L136">		}</span>
+
+		public Fallback fallbackForKnownLanguages(boolean fallbackForKnownLanguages) {
+<span class="nc" id="L139">			setFallbackForKnownLanguages(fallbackForKnownLanguages);</span>
+<span class="nc" id="L140">			return this;</span>
+		}
+
+		public boolean isFallbackForUnknownLanguages() {
+<span class="nc" id="L144">			return fallbackForUnknownLanguages;</span>
+		}
+
+		public void setFallbackForUnknownLanguages(boolean fallbackForUnknownLanguages) {
+<span class="nc" id="L148">			this.fallbackForUnknownLanguages = fallbackForUnknownLanguages;</span>
+<span class="nc" id="L149">		}</span>
+
+		public Fallback fallbackForUnknownLanguages(boolean fallbackForUnknownLanguages) {
+<span class="nc" id="L152">			setFallbackForUnknownLanguages(fallbackForUnknownLanguages);</span>
+<span class="nc" id="L153">			return this;</span>
+		}
+
+		public List&lt;String&gt; getFallbackLanguage() {
+<span class="nc" id="L157">			return fallbackLanguage;</span>
+		}
+
+		public void setFallbackLanguage(List&lt;String&gt; fallbackLanguage) {
+<span class="nc" id="L161">			this.fallbackLanguage = fallbackLanguage;</span>
+<span class="nc" id="L162">		}</span>
+
+		public Fallback fallbackLanguage(List&lt;String&gt; fallbackLanguage) {
+<span class="nc" id="L165">			setFallbackLanguage(fallbackLanguage);</span>
+<span class="nc" id="L166">			return this;</span>
+		}
+	}
+
+<span class="nc" id="L170">	public static class DataSource {</span>
 		public static final String NAMICS_SPRING_I18N_PROPERTIES_DATA_SOURCE = NAMICS_SPRING_I18N_PROPERTIES_PREFIX + &quot;.dataSource&quot;;
 
 		/**
 		 * the table name
 		 */
-<span class="nc" id="L82">		private String tableName = &quot;MESSAGES&quot;;</span>
+<span class="nc" id="L176">		private String tableName = &quot;MESSAGES&quot;;</span>
 
 
 		/**
 		 * column name for code id.
 		 */
-<span class="nc" id="L88">		private String codeIdColumnName = &quot;CODEID&quot;;</span>
+<span class="nc" id="L182">		private String codeIdColumnName = &quot;CODEID&quot;;</span>
 
 		/**
 		 * column name for the language id
 		 */
-<span class="nc" id="L93">		private String langIdColumnName = &quot;LANGID&quot;;</span>
+<span class="nc" id="L187">		private String langIdColumnName = &quot;LANGID&quot;;</span>
 
 		/**
 		 * column name for the message
 		 */
-<span class="nc" id="L98">		private String messageColumnName = &quot;MESSAGE&quot;;</span>
+<span class="nc" id="L192">		private String messageColumnName = &quot;MESSAGE&quot;;</span>
 
 		/**
 		 * column name for message type.
 		 */
-<span class="nc" id="L103">		private String typeColumnName = &quot;TYPE&quot;;</span>
+<span class="nc" id="L197">		private String typeColumnName = &quot;TYPE&quot;;</span>
+
+		/**
+		 * classpath for sql script export template.
+		 */
+<span class="nc" id="L202">		private String sqlExportScriptTemplatePath = &quot;classpath:/templates/template.sql&quot;;</span>
+
+		/**
+		 * sql export INSERT statement template.
+		 */
+<span class="nc" id="L207">		private String sqlExportInsertStatementTemplate = &quot;INSERT INTO ##TABLE## (##CODEID##, ##LANGID##, ##MESSAGE##, ##TYPE##) VALUES (:codeid, :langid, :message, :type);&quot;;</span>
+
+		/**
+		 * sql export body placeholder (replaced by INSERT statements).
+		 */
+<span class="nc" id="L212">		private String sqlExportBodyPlaceholder = &quot;##BODY##&quot;;</span>
+
+		/**
+		 * sql export character to use for line breaks.
+		 */
+<span class="nc" id="L217">		private String sqlExportLineBreak = System.getProperty(&quot;line.separator&quot;, &quot;\n&quot;);</span>
 
 		public String getTableName() {
-<span class="nc" id="L106">			return tableName;</span>
+<span class="nc" id="L220">			return tableName;</span>
 		}
 
 		public void setTableName(String tableName) {
-<span class="nc" id="L110">			this.tableName = tableName;</span>
-<span class="nc" id="L111">		}</span>
+<span class="nc" id="L224">			this.tableName = tableName;</span>
+<span class="nc" id="L225">		}</span>
 
 		public String getCodeIdColumnName() {
-<span class="nc" id="L114">			return codeIdColumnName;</span>
+<span class="nc" id="L228">			return codeIdColumnName;</span>
 		}
 
 		public void setCodeIdColumnName(String codeIdColumnName) {
-<span class="nc" id="L118">			this.codeIdColumnName = codeIdColumnName;</span>
-<span class="nc" id="L119">		}</span>
+<span class="nc" id="L232">			this.codeIdColumnName = codeIdColumnName;</span>
+<span class="nc" id="L233">		}</span>
 
 		public String getLangIdColumnName() {
-<span class="nc" id="L122">			return langIdColumnName;</span>
+<span class="nc" id="L236">			return langIdColumnName;</span>
 		}
 
 		public void setLangIdColumnName(String langIdColumnName) {
-<span class="nc" id="L126">			this.langIdColumnName = langIdColumnName;</span>
-<span class="nc" id="L127">		}</span>
+<span class="nc" id="L240">			this.langIdColumnName = langIdColumnName;</span>
+<span class="nc" id="L241">		}</span>
 
 		public String getMessageColumnName() {
-<span class="nc" id="L130">			return messageColumnName;</span>
+<span class="nc" id="L244">			return messageColumnName;</span>
 		}
 
 		public void setMessageColumnName(String messageColumnName) {
-<span class="nc" id="L134">			this.messageColumnName = messageColumnName;</span>
-<span class="nc" id="L135">		}</span>
+<span class="nc" id="L248">			this.messageColumnName = messageColumnName;</span>
+<span class="nc" id="L249">		}</span>
 
 		public String getTypeColumnName() {
-<span class="nc" id="L138">			return typeColumnName;</span>
+<span class="nc" id="L252">			return typeColumnName;</span>
 		}
 
 		public void setTypeColumnName(String typeColumnName) {
-<span class="nc" id="L142">			this.typeColumnName = typeColumnName;</span>
-<span class="nc" id="L143">		}</span>
+<span class="nc" id="L256">			this.typeColumnName = typeColumnName;</span>
+<span class="nc" id="L257">		}</span>
+
+		public String getSqlExportScriptTemplatePath() {
+<span class="nc" id="L260">			return sqlExportScriptTemplatePath;</span>
+		}
+
+		public void setSqlExportScriptTemplatePath(String sqlExportScriptTemplatePath) {
+<span class="nc" id="L264">			this.sqlExportScriptTemplatePath = sqlExportScriptTemplatePath;</span>
+<span class="nc" id="L265">		}</span>
+
+		public String getSqlExportInsertStatementTemplate() {
+<span class="nc" id="L268">			return sqlExportInsertStatementTemplate;</span>
+		}
+
+		public void setSqlExportInsertStatementTemplate(String sqlExportInsertStatementTemplate) {
+<span class="nc" id="L272">			this.sqlExportInsertStatementTemplate = sqlExportInsertStatementTemplate;</span>
+<span class="nc" id="L273">		}</span>
+
+		public String getSqlExportBodyPlaceholder() {
+<span class="nc" id="L276">			return sqlExportBodyPlaceholder;</span>
+		}
+
+		public void setSqlExportBodyPlaceholder(String sqlExportBodyPlaceholder) {
+<span class="nc" id="L280">			this.sqlExportBodyPlaceholder = sqlExportBodyPlaceholder;</span>
+<span class="nc" id="L281">		}</span>
+
+		public String getSqlExportLineBreak() {
+<span class="nc" id="L284">			return sqlExportLineBreak;</span>
+		}
+
+		public void setSqlExportLineBreak(String sqlExportLineBreak) {
+<span class="nc" id="L288">			this.sqlExportLineBreak = sqlExportLineBreak;</span>
+<span class="nc" id="L289">		}</span>
 	}
 
 }

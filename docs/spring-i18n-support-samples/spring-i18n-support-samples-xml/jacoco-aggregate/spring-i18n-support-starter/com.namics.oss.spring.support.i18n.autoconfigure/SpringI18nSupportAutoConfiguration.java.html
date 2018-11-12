@@ -1,19 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SpringI18nSupportAutoConfiguration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">spring-i18n-support-samples-xml</a> &gt; <a href="../index.html" class="el_bundle">spring-i18n-support-starter</a> &gt; <a href="index.source.html" class="el_package">com.namics.oss.spring.support.i18n.autoconfigure</a> &gt; <span class="el_source">SpringI18nSupportAutoConfiguration.java</span></div><h1>SpringI18nSupportAutoConfiguration.java</h1><pre class="source lang-java linenums">package com.namics.oss.spring.support.i18n.autoconfigure;
 
 import com.namics.oss.spring.support.i18n.DaoMessageSource;
-import com.namics.oss.spring.support.i18n.config.I18nConfigTemplate;
 import com.namics.oss.spring.support.i18n.dao.MessageSourceDao;
+import com.namics.oss.spring.support.i18n.dao.MessageSourceManagementDao;
 import com.namics.oss.spring.support.i18n.dao.SimpleJdbcMessageSourceDao;
+import com.namics.oss.spring.support.i18n.excel.ExcelReader;
+import com.namics.oss.spring.support.i18n.excel.ExcelWriter;
+import com.namics.oss.spring.support.i18n.service.MessageManagementService;
+import com.namics.oss.spring.support.i18n.service.MessageManagementServiceImpl;
 import com.namics.oss.spring.support.i18n.service.ReloadService;
 import com.namics.oss.spring.support.i18n.service.ReloadServiceImpl;
+import com.namics.oss.spring.support.i18n.text.SqlScriptWriter;
+import com.namics.oss.spring.support.i18n.text.TextWriter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
 
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toMap;
+import static org.springframework.util.CollectionUtils.isEmpty;
 import static org.springframework.util.StringUtils.hasText;
 
 /**
@@ -22,47 +35,122 @@ import static org.springframework.util.StringUtils.hasText;
  * @author rgsell, Namics AG
  * @since 13.09.17 16:21
  */
-@Import(I18nConfigTemplate.class)
+@Configuration
 @EnableConfigurationProperties(SpringI18nSupportProperties.class)
-<span class="nc" id="L27">public class SpringI18nSupportAutoConfiguration {</span>
+<span class="nc" id="L40">public class SpringI18nSupportAutoConfiguration {</span>
 
 	@Inject
 	protected SpringI18nSupportProperties springI18nSupportProperties;
 
 	@Bean
 	public ReloadService messageSourceReloadService() {
-<span class="nc" id="L34">		return new ReloadServiceImpl();</span>
+<span class="nc" id="L47">		return new ReloadServiceImpl();</span>
 	}
 
 	@Bean(name = &quot;messageSource&quot;)
 	public DaoMessageSource i18nMessageSource(MessageSourceDao messageSourceDao) {
-<span class="nc" id="L39">		DaoMessageSource source = new DaoMessageSource();</span>
-<span class="nc" id="L40">		source.setMessageSourceDao(messageSourceDao);</span>
-<span class="nc" id="L41">		source.setUseCodeAsDefaultMessage(true);</span>
-<span class="nc" id="L42">		return source;</span>
+<span class="nc" id="L52">		DaoMessageSource source = new DaoMessageSource();</span>
+<span class="nc" id="L53">		source.setMessageSourceDao(messageSourceDao);</span>
+<span class="nc" id="L54">		source.setUseCodeAsDefaultMessage(springI18nSupportProperties.getFallback().isUseCodeAsDefaultMessage());</span>
+
+		//set fallbacks if at least one is enabled and one fallback lang is available
+<span class="nc" id="L57">		boolean fallbackForKnownLanguages = springI18nSupportProperties.getFallback().isFallbackForKnownLanguages();</span>
+<span class="nc" id="L58">		boolean fallbackForUnknownLanguages = springI18nSupportProperties.getFallback().isFallbackForUnknownLanguages();</span>
+<span class="nc" id="L59">		List&lt;String&gt; fallbackLanguage = springI18nSupportProperties.getFallback().getFallbackLanguage();</span>
+<span class="nc bnc" id="L60" title="All 6 branches missed.">		if (!isEmpty(fallbackLanguage) &amp;&amp; (fallbackForKnownLanguages || fallbackForUnknownLanguages)) {</span>
+<span class="nc" id="L61">			source.setFallbackForKnownLanguages(fallbackForKnownLanguages);</span>
+<span class="nc" id="L62">			source.setFallbackForUnknownLanguages(fallbackForUnknownLanguages);</span>
+<span class="nc" id="L63">			source.setFallbacks(IntStream.range(0, fallbackLanguage.size()).boxed().collect(toMap(Function.identity(), fallbackLanguage::get)));</span>
+
+		}
+<span class="nc" id="L66">		return source;</span>
 	}
 
-	@Bean(name = &quot;jdbcMessageSourceDao&quot;)
+	@Bean
 	@ConditionalOnMissingBean
 	public SimpleJdbcMessageSourceDao jdbcMessageSourceDa(DataSource dataSource) {
-<span class="nc" id="L48">		SimpleJdbcMessageSourceDao jdbcMessageSourceDao = new SimpleJdbcMessageSourceDao();</span>
-<span class="nc" id="L49">		jdbcMessageSourceDao.setDataSource(dataSource);</span>
-<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (hasText(getTableName())) {</span>
-<span class="nc" id="L51">			jdbcMessageSourceDao.setTable(getTableName());</span>
+<span class="nc" id="L72">		SimpleJdbcMessageSourceDao jdbcMessageSourceDao = new SimpleJdbcMessageSourceDao();</span>
+<span class="nc" id="L73">		jdbcMessageSourceDao.setDataSource(dataSource);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">		if (hasText(getTableName())) {</span>
+<span class="nc" id="L75">			jdbcMessageSourceDao.setTable(getTableName());</span>
 		}
-<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (hasText(getMessageColumnName())) {</span>
-<span class="nc" id="L54">			jdbcMessageSourceDao.setMessage(getMessageColumnName());</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (hasText(getMessageColumnName())) {</span>
+<span class="nc" id="L78">			jdbcMessageSourceDao.setMessage(getMessageColumnName());</span>
 		}
-<span class="nc bnc" id="L56" title="All 2 branches missed.">		if (hasText(getTypeColumnName())) {</span>
-<span class="nc" id="L57">			jdbcMessageSourceDao.setType(getTypeColumnName());</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">		if (hasText(getTypeColumnName())) {</span>
+<span class="nc" id="L81">			jdbcMessageSourceDao.setType(getTypeColumnName());</span>
 		}
-<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (hasText(getCodeIdColumnName())) {</span>
-<span class="nc" id="L60">			jdbcMessageSourceDao.setCodeId(getCodeIdColumnName());</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (hasText(getCodeIdColumnName())) {</span>
+<span class="nc" id="L84">			jdbcMessageSourceDao.setCodeId(getCodeIdColumnName());</span>
 		}
-<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (hasText(getLangIdColumnName())) {</span>
-<span class="nc" id="L63">			jdbcMessageSourceDao.setLangId(getLangIdColumnName());</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">		if (hasText(getLangIdColumnName())) {</span>
+<span class="nc" id="L87">			jdbcMessageSourceDao.setLangId(getLangIdColumnName());</span>
 		}
-<span class="nc" id="L65">		return jdbcMessageSourceDao;</span>
+<span class="nc" id="L89">		return jdbcMessageSourceDao;</span>
+	}
+
+	@Bean
+	public AnnotationMBeanExporter annotationMBeanExporter() {
+<span class="nc" id="L94">		return new AnnotationMBeanExporter();</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public ExcelReader excelReader() {
+<span class="nc" id="L100">		return new ExcelReader();</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public ExcelWriter excelWriter() {
+<span class="nc" id="L106">		return new ExcelWriter();</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public TextWriter sqlScriptWriter() {
+<span class="nc" id="L112">		SqlScriptWriter sqlScriptWriter = new SqlScriptWriter();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">		if (hasText(getScriptTemplatePath())) {</span>
+<span class="nc" id="L114">			sqlScriptWriter.setScriptTemplate(new DefaultResourceLoader().getResource(getScriptTemplatePath()));</span>
+		}
+<span class="nc bnc" id="L116" title="All 2 branches missed.">		if (hasText(getSqlInsertStatementTemplate())) {</span>
+<span class="nc" id="L117">			sqlScriptWriter.setInsertStatementTemplate(getSqlInsertStatementTemplate());</span>
+		}
+<span class="nc bnc" id="L119" title="All 2 branches missed.">		if (hasText(getSqlBodyPlaceholder())) {</span>
+<span class="nc" id="L120">			sqlScriptWriter.setBodyPlaceholder(getSqlBodyPlaceholder());</span>
+		}
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (hasText(getSqlLineBreak())) {</span>
+<span class="nc" id="L123">			sqlScriptWriter.setLineBreak(getSqlLineBreak());</span>
+		}
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (hasText(getTableName())) {</span>
+<span class="nc" id="L126">			sqlScriptWriter.setTable(getTableName());</span>
+		}
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (hasText(getMessageColumnName())) {</span>
+<span class="nc" id="L129">			sqlScriptWriter.setMessage(getMessageColumnName());</span>
+		}
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (hasText(getTypeColumnName())) {</span>
+<span class="nc" id="L132">			sqlScriptWriter.setType(getTypeColumnName());</span>
+		}
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (hasText(getCodeIdColumnName())) {</span>
+<span class="nc" id="L135">			sqlScriptWriter.setCodeId(getCodeIdColumnName());</span>
+		}
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (hasText(getLangIdColumnName())) {</span>
+<span class="nc" id="L138">			sqlScriptWriter.setLangId(getLangIdColumnName());</span>
+		}
+<span class="nc" id="L140">		return sqlScriptWriter;</span>
+	}
+
+	@Bean
+	public MessageManagementService messageManagementService(MessageSourceManagementDao messageSourceDao,
+	                                                         ExcelReader excelReader,
+	                                                         ExcelWriter excelWriter,
+	                                                         TextWriter textWriter) {
+<span class="nc" id="L148">		MessageManagementServiceImpl service = new MessageManagementServiceImpl();</span>
+<span class="nc" id="L149">		service.setExcelReader(excelReader);</span>
+<span class="nc" id="L150">		service.setExcelWriter(excelWriter);</span>
+<span class="nc" id="L151">		service.setTextWriter(textWriter);</span>
+<span class="nc" id="L152">		service.setMessageSourceDao(messageSourceDao);</span>
+<span class="nc" id="L153">		return service;</span>
 	}
 
 	/**
@@ -71,24 +159,39 @@ import static org.springframework.util.StringUtils.hasText;
 	 * @return table name
 	 */
 	protected String getTableName() {
-<span class="nc" id="L74">		return springI18nSupportProperties.getDataSource().getTableName();</span>
+<span class="nc" id="L162">		return springI18nSupportProperties.getDataSource().getTableName();</span>
 	}
 
 	protected String getMessageColumnName() {
-<span class="nc" id="L78">		return springI18nSupportProperties.getDataSource().getMessageColumnName();</span>
+<span class="nc" id="L166">		return springI18nSupportProperties.getDataSource().getMessageColumnName();</span>
 	}
 
 	protected String getTypeColumnName() {
-<span class="nc" id="L82">		return springI18nSupportProperties.getDataSource().getTypeColumnName();</span>
+<span class="nc" id="L170">		return springI18nSupportProperties.getDataSource().getTypeColumnName();</span>
 	}
 
 	protected String getCodeIdColumnName() {
-<span class="nc" id="L86">		return springI18nSupportProperties.getDataSource().getCodeIdColumnName();</span>
+<span class="nc" id="L174">		return springI18nSupportProperties.getDataSource().getCodeIdColumnName();</span>
 	}
 
 	protected String getLangIdColumnName() {
-<span class="nc" id="L90">		return springI18nSupportProperties.getDataSource().getLangIdColumnName();</span>
+<span class="nc" id="L178">		return springI18nSupportProperties.getDataSource().getLangIdColumnName();</span>
 	}
 
+	protected String getScriptTemplatePath() {
+<span class="nc" id="L182">		return springI18nSupportProperties.getDataSource().getSqlExportScriptTemplatePath();</span>
+	}
+
+	protected String getSqlInsertStatementTemplate() {
+<span class="nc" id="L186">		return springI18nSupportProperties.getDataSource().getSqlExportInsertStatementTemplate();</span>
+	}
+
+	protected String getSqlBodyPlaceholder() {
+<span class="nc" id="L190">		return springI18nSupportProperties.getDataSource().getSqlExportBodyPlaceholder();</span>
+	}
+
+	protected String getSqlLineBreak() {
+<span class="nc" id="L194">		return springI18nSupportProperties.getDataSource().getSqlExportLineBreak();</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

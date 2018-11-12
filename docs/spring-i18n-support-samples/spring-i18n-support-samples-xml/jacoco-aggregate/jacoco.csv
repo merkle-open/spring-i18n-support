@@ -6,10 +6,10 @@ spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.suppor
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.util,LocaleComparator,0,23,0,8,0,8,0,6,0,2
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.dao,ExcelMessageSourceDao,51,151,4,10,13,31,6,11,3,7
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.dao,SimpleJdbcMessageSourceDao.TableEntry,3,27,0,0,2,10,1,5,1,5
-spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.dao,SimpleJdbcMessageSourceDao.TableEntryRowMapper,0,19,0,0,0,2,0,2,0,2
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.dao,SimpleJdbcMessageSourceDao,175,559,9,17,46,107,19,20,13,13
+spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.dao,SimpleJdbcMessageSourceDao.TableEntryRowMapper,0,19,0,0,0,2,0,2,0,2
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.model,MessageResourceEntry,37,46,1,1,4,13,4,9,3,9
-spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.model,MessageCacheKey,20,91,11,11,7,25,9,9,0,7
+spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.model,MessageCacheKey,22,89,12,10,8,24,10,8,0,7
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.dao.jpa.model,MessageResource,24,62,1,1,10,19,6,12,5,12
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n,DaoMessageSource.MessageCachingMapDecorator,0,14,0,0,0,2,0,2,0,2
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n,DaoMessageSource.FormatCachingMapDecorator,2,23,1,1,1,4,1,2,0,2
@@ -25,15 +25,16 @@ spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.suppor
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.text,SqlScriptWriter.new Comparator() {...},0,12,0,0,0,2,0,2,0,2
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.text,SqlScriptWriter,177,361,4,10,61,74,25,13,22,9
 spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.properties,PropertiesWriter,86,280,11,19,21,64,15,16,5,11
-spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.config,I18nConfigTemplate,45,0,0,0,13,0,7,0,7,0
+spring-i18n-support-samples-xml/spring-i18n-support,com.namics.oss.spring.support.i18n.config,I18nConfigTemplate,52,0,0,0,14,0,7,0,7,0
 spring-i18n-support-samples-xml/spring-i18n-support-web,com.namics.oss.spring.support.i18n.web.bean,MessageSourceTableBean,27,0,0,0,11,0,7,0,7,0
 spring-i18n-support-samples-xml/spring-i18n-support-web,com.namics.oss.spring.support.i18n.web.config,I18nWebConfig,110,0,0,0,18,0,8,0,8,0
 spring-i18n-support-samples-xml/spring-i18n-support-web,com.namics.oss.spring.support.i18n.web,MessageSourceManagementController,579,0,46,0,158,0,52,0,29,0
 spring-i18n-support-samples-xml/spring-i18n-support-web,com.namics.oss.spring.support.i18n.web.controller,FileController,186,0,12,0,37,0,10,0,4,0
 spring-i18n-support-samples-xml/spring-i18n-support-web,com.namics.oss.spring.support.i18n.web.controller,MessageSourceDataController,330,0,30,0,68,0,27,0,12,0
-spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportProperties,37,0,0,0,13,0,7,0,7,0
+spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportProperties,54,0,0,0,19,0,10,0,10,0
 spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportProperties.Web,17,0,0,0,7,0,5,0,5,0
 spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportStarterAutoConfiguration,3,0,0,0,1,0,1,0,1,0
-spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportProperties.DataSource,53,0,0,0,21,0,11,0,11,0
+spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportProperties.Fallback,65,0,0,0,25,0,13,0,13,0
 spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportWebAutoConfiguration,69,0,4,0,15,0,6,0,4,0
-spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportAutoConfiguration,93,0,10,0,24,0,14,0,9,0
+spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportProperties.DataSource,95,0,0,0,37,0,19,0,19,0
+spring-i18n-support-samples-xml/spring-i18n-support-starter,com.namics.oss.spring.support.i18n.autoconfigure,SpringI18nSupportAutoConfiguration,272,0,34,0,64,0,35,0,18,0

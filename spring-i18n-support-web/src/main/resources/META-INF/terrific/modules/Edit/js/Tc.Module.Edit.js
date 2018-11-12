@@ -14,7 +14,7 @@
 				self.tpl = doT.template(self.$ctx.find('.tpl-message').text());
 				self.code = Tc.Utils.Helper.getUrlVars()['code'];
 				if (self.code) {
-					$.getJSON(self.url + self.code, function (message) {
+					$.getJSON(self.url + "/" + self.code, function (message) {
 						self._loadLocalesAndFillTemplate(self, message);
 					});
 				} else {

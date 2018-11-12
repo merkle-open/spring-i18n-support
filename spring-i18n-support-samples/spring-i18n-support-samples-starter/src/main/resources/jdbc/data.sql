@@ -37,3 +37,6 @@ INSERT INTO MESSAGES (CODEID,LANGID,MESSAGE) VALUES ('messages.admin.form.new','
 INSERT INTO MESSAGES (CODEID,LANGID,MESSAGE) VALUES ('messages.admin.form.delete','de','Löschen');
 INSERT INTO MESSAGES (CODEID,LANGID,MESSAGE) VALUES ('messages.admin.form.delete','en','delete');
 
+INSERT INTO MESSAGES (CODEID,LANGID,MESSAGE) VALUES ('messages.i18n-view.pragraph.text','de','Bsp Text ohne Franz. und Ital.');
+INSERT INTO MESSAGES (CODEID,LANGID,MESSAGE) VALUES ('messages.i18n-view.pragraph.text','en','Example Text without france and ital.');
+

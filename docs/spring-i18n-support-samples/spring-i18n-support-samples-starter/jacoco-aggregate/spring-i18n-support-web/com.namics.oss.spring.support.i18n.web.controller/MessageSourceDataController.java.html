@@ -81,7 +81,7 @@ public class MessageSourceDataController {
 <span class="nc" id="L81">		return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);</span>
 	}
 
-	@RequestMapping(value = &quot;/{code:.*}&quot;, method = RequestMethod.POST)
+	@RequestMapping(value = &quot;/{code:.*}&quot;, method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity putMessage(@PathVariable(CODE) String code, @ModelAttribute MessageResourceEntry
 			messageResourceEntry) {
 <span class="nc" id="L87">		Assert.hasText(messageResourceEntry.getCodeId(), &quot;message code must be set!&quot;);</span>

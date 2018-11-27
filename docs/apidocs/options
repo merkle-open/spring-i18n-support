@@ -15,10 +15,10 @@
 -docencoding
 'UTF-8'
 -doctitle
-'spring-i18n-support-pom 1.1.1 API'
+'spring-i18n-support-pom 1.1.2 API'
 -linkoffline
 'https://docs.oracle.com/javase/8/docs/api' '/home/travis/build/namics/spring-i18n-support/target/javadoc-bundle-options'
 -use
 -version
 -windowtitle
-'spring-i18n-support-pom 1.1.1 API'
+'spring-i18n-support-pom 1.1.2 API'

@@ -15,7 +15,7 @@ This modules aims to provide i18n database resource.
 	<dependency>
 		<groupId>com.namics.oss.spring.support.i18n</groupId>
 		<artifactId>spring-i18n-support</artifactId>
-		<version>1.1.1</version>
+		<version>1.1.2</version>
 	</dependency>
 	
 This modules are using spring auto-configured beans. Setup instructions and configuration options can be found in the [spring-i18n-support-starter](spring-i18n-support-starter) module. If you are not using spring boot Auto-Configuration, have a look at [spring-i18n-support](spring-i18n-support) module.

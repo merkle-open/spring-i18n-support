@@ -44,7 +44,7 @@
 
 				// ajax then reload, no errorhandling
 				var jqxhr = $.ajax({
-					url: self.url + self.code,
+					url: self.url + "/" + self.code,
 					type: 'post',
 					timeout: 6000,
 					data: msgEditForm.serialize(),
